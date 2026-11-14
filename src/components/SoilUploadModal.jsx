@@ -18,55 +18,7 @@ import {
 import { useSoil } from '../context/SoilContext';
 import { SAMPLE_SOIL_REPORTS } from '../data/sampleSoilReports';
 import { api } from '../services/api';
-
-// Agronomic classification helper for live input validation
-function classifyLive(param, val) {
-  if (val === null || val === undefined || isNaN(val) || val === '') return null;
-  const num = parseFloat(val);
-  switch (param) {
-    case 'nitrogen':
-      return num < 280 ? { label: 'Low', color: 'bg-amber-50 text-amber-900 border-amber-200' } : 
-             num <= 560 ? { label: 'Medium', color: 'bg-emerald-50 text-[#245C3A] border-emerald-200' } : 
-             { label: 'High', color: 'bg-sky-50 text-sky-900 border-sky-200' };
-    case 'phosphorus':
-      return num < 14 ? { label: 'Low', color: 'bg-amber-50 text-amber-900 border-amber-200' } : 
-             num <= 28 ? { label: 'Medium', color: 'bg-emerald-50 text-[#245C3A] border-emerald-200' } : 
-             { label: 'High', color: 'bg-sky-50 text-sky-900 border-sky-200' };
-    case 'potassium':
-      return num < 135 ? { label: 'Low', color: 'bg-amber-50 text-amber-900 border-amber-200' } : 
-             num <= 280 ? { label: 'Medium', color: 'bg-emerald-50 text-[#245C3A] border-emerald-200' } : 
-             { label: 'High', color: 'bg-sky-50 text-sky-900 border-sky-200' };
-    case 'ph':
-      return num < 5.5 ? { label: 'Strongly acidic', color: 'bg-red-50 text-red-900 border-red-200' } :
-             num < 6.5 ? { label: 'Moderately acidic', color: 'bg-amber-50 text-amber-900 border-amber-200' } :
-             num <= 7.5 ? { label: 'Neutral', color: 'bg-emerald-50 text-[#245C3A] border-emerald-200' } :
-             num <= 8.5 ? { label: 'Alkaline', color: 'bg-amber-50 text-amber-900 border-amber-200' } :
-             { label: 'Strongly alkaline', color: 'bg-purple-50 text-purple-900 border-purple-200' };
-    case 'organicCarbon':
-      return num < 0.50 ? { label: 'Low', color: 'bg-amber-50 text-amber-900 border-amber-200' } :
-             num <= 0.75 ? { label: 'Medium', color: 'bg-emerald-50 text-[#245C3A] border-emerald-200' } :
-             { label: 'High', color: 'bg-emerald-50 text-[#245C3A] border-emerald-200' };
-    case 'ec':
-      return num < 1.0 ? { label: 'Normal', color: 'bg-emerald-50 text-[#245C3A] border-emerald-200' } :
-             num <= 2.0 ? { label: 'Slightly saline', color: 'bg-amber-50 text-amber-900 border-amber-200' } :
-             { label: 'Saline', color: 'bg-red-50 text-red-900 border-red-200' };
-    case 'zinc':
-      return num < 0.60 ? { label: 'Low (Deficient)', color: 'bg-amber-50 text-amber-900 border-amber-200' } :
-             { label: 'Sufficient', color: 'bg-emerald-50 text-[#245C3A] border-emerald-200' };
-    case 'sulphur':
-      return num < 10.0 ? { label: 'Low', color: 'bg-amber-50 text-amber-900 border-amber-200' } :
-             num <= 20.0 ? { label: 'Medium', color: 'bg-emerald-50 text-[#245C3A] border-emerald-200' } :
-             { label: 'High', color: 'bg-emerald-50 text-[#245C3A] border-emerald-200' };
-    case 'iron':
-      return num < 4.5 ? { label: 'Low', color: 'bg-amber-50 text-amber-900 border-amber-200' } :
-             { label: 'Sufficient', color: 'bg-emerald-50 text-[#245C3A] border-emerald-200' };
-    case 'boron':
-      return num < 0.50 ? { label: 'Low', color: 'bg-amber-50 text-amber-900 border-amber-200' } :
-             { label: 'Sufficient', color: 'bg-emerald-50 text-[#245C3A] border-emerald-200' };
-    default:
-      return null;
-  }
-}
+import { classifyLive, analyzeSoil } from '../engine/icarEngine';
 
 export default function SoilUploadModal() {
   const { isUploadModalOpen, setIsUploadModalOpen, addReport } = useSoil();
@@ -216,6 +168,11 @@ export default function SoilUploadModal() {
       return;
     }
 
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setFileError("Card OCR scan requires an internet connection to reach the backend. Please connect to the internet or enter soil values manually offline.");
+      return;
+    }
+
     setModalStep('processing');
     setProcessingStep(0);
 
@@ -340,6 +297,54 @@ export default function SoilUploadModal() {
       }
     };
 
+    // Run deterministic ICAR agronomy analysis (works 100% offline)
+    const localAnalysis = analyzeSoil(verifiedPayload);
+    verifiedPayload.healthScore = localAnalysis.healthScore;
+    verifiedPayload.overallStatus = localAnalysis.overallStatus;
+    verifiedPayload.fertilizerPlan = [
+      {
+        fertilizer: localAnalysis.fertilizerPlan.urea.fertilizer,
+        bagsPerAcre: localAnalysis.fertilizerPlan.urea.bagsPerAcre,
+        totalKg: localAnalysis.fertilizerPlan.urea.kgPerAcre,
+        timing: localAnalysis.fertilizerPlan.urea.timing,
+        estimatedCost: `₹${Math.round(localAnalysis.fertilizerPlan.urea.bagsPerAcre * 266.5)}`,
+        savingTip: localAnalysis.fertilizerPlan.urea.dapDeductionNote || "Calibrated N splits prevent lodging."
+      },
+      {
+        fertilizer: localAnalysis.fertilizerPlan.phosphorusSource.fertilizer,
+        bagsPerAcre: localAnalysis.fertilizerPlan.phosphorusSource.bagsPerAcre,
+        totalKg: localAnalysis.fertilizerPlan.phosphorusSource.kgPerAcre,
+        timing: localAnalysis.fertilizerPlan.phosphorusSource.timing,
+        estimatedCost: `₹${Math.round(localAnalysis.fertilizerPlan.phosphorusSource.bagsPerAcre * 1350)}`,
+        savingTip: "100% basal drilling 5cm below seed."
+      },
+      {
+        fertilizer: localAnalysis.fertilizerPlan.mop.fertilizer,
+        bagsPerAcre: localAnalysis.fertilizerPlan.mop.bagsPerAcre,
+        totalKg: localAnalysis.fertilizerPlan.mop.kgPerAcre,
+        timing: localAnalysis.fertilizerPlan.mop.timing,
+        estimatedCost: `₹${Math.round(localAnalysis.fertilizerPlan.mop.bagsPerAcre * 1700)}`,
+        savingTip: k > 280 ? "Saved input costs by cutting MOP dose by 50%!" : "Supports stem strength and drought resistance."
+      },
+      ...(localAnalysis.fertilizerPlan.zinc ? [{
+        fertilizer: localAnalysis.fertilizerPlan.zinc.fertilizer,
+        bagsPerAcre: 0.4,
+        totalKg: localAnalysis.fertilizerPlan.zinc.kgPerAcre,
+        timing: localAnalysis.fertilizerPlan.zinc.timing,
+        estimatedCost: "₹420",
+        savingTip: "Critical prevention for Khaira disease (DO NOT mix with DAP)."
+      }] : [])
+    ];
+    verifiedPayload.cropRecommendations = localAnalysis.cropSuggestions.slice(0, 3).map(c => ({
+      crop: c.crop,
+      suitability: c.suitability,
+      season: "Kharif / Rabi",
+      soilMatch: c.suitability > 80 ? "Excellent" : "Good",
+      waterNeed: c.waterNeed,
+      expectedYield: "High potential under recommended practices",
+      rationale: c.rationale
+    }));
+
     await addReport(verifiedPayload, selectedFile);
     resetModal();
     navigate('/soil-analysis');
@@ -389,6 +394,26 @@ export default function SoilUploadModal() {
           {/* STEP 1: UPLOAD SCREEN */}
           {modalStep === 'upload' && (
             <>
+              {/* Offline Warning & Manual Entry Prompt */}
+              {typeof navigator !== 'undefined' && !navigator.onLine && (
+                <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start justify-between gap-3 shadow-xs">
+                  <div className="flex items-start gap-2.5">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-amber-700 mt-0.5" />
+                    <div>
+                      <p className="font-bold text-amber-950">Offline Mode Active</p>
+                      <p className="text-[#5C6E63] mt-0.5">Card OCR scan requires an internet connection. Enter your soil test values manually to run the offline ICAR analysis engine.</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleEnterManually}
+                    className="shrink-0 text-xs font-bold text-[#245C3A] bg-white px-3 py-1.5 rounded-xl border border-amber-300 hover:bg-[#E8F0E7] shadow-xs transition cursor-pointer"
+                  >
+                    Enter Manually
+                  </button>
+                </div>
+              )}
+
               {/* Dropzone */}
               <div
                 onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
@@ -462,6 +487,19 @@ export default function SoilUploadModal() {
                   <span>{fileError}</span>
                 </div>
               )}
+
+              {/* Manual Entry Action Link */}
+              <div className="flex items-center justify-between text-xs text-[#5C6E63] px-1 py-1">
+                <span>Working offline or don't have a document file?</span>
+                <button
+                  type="button"
+                  onClick={handleEnterManually}
+                  className="font-bold text-[#245C3A] hover:underline cursor-pointer flex items-center gap-1.5"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Enter values manually</span>
+                </button>
+              </div>
 
               {/* Start Extraction button */}
               {selectedFile && (

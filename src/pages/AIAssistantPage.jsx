@@ -16,6 +16,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useSoil } from '../context/SoilContext';
 import { api, API_BASE_URL } from '../services/api';
+import { answerOffline } from '../engine/offlineAnswers';
 
 export default function AIAssistantPage() {
   const { user, language, setLanguage } = useAuth();
@@ -62,6 +63,17 @@ export default function AIAssistantPage() {
       }
     };
   }, []);
+
+  // Cache the active soil report in localStorage whenever it loads so the offline engine has data
+  useEffect(() => {
+    if (activeReport) {
+      try {
+        localStorage.setItem('krishisaathi_active_report', JSON.stringify(activeReport));
+      } catch (e) {
+        console.warn("Could not cache active soil report:", e);
+      }
+    }
+  }, [activeReport]);
 
   // Language Change Handler with persistent profile sync
   const handleLanguageChange = async (langCode) => {
@@ -258,45 +270,7 @@ export default function AIAssistantPage() {
       targetLang = 'hi';
     }
 
-    // 2. Call backend TTS endpoint with fetch (includes auth header)
-    try {
-      const token = localStorage.getItem('krishisaathi_token');
-      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-      const ttsUrl = `${API_BASE_URL}/chat/tts?text=${encodeURIComponent(cleanText.slice(0, 500))}&lang=${encodeURIComponent(targetLang)}`;
-
-      const res = await fetch(ttsUrl, { headers });
-      if (!res.ok) {
-        throw new Error(`TTS server responded with ${res.status}`);
-      }
-
-      const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const audio = new Audio(blobUrl);
-      currentAudioRef.current = audio;
-
-      audio.onended = () => {
-        URL.revokeObjectURL(blobUrl);
-        if (currentAudioRef.current === audio) {
-          currentAudioRef.current = null;
-        }
-        setSpeakingMessageId(null);
-      };
-
-      audio.onerror = () => {
-        URL.revokeObjectURL(blobUrl);
-        if (currentAudioRef.current === audio) {
-          currentAudioRef.current = null;
-        }
-        setSpeakingMessageId(null);
-      };
-
-      await audio.play();
-      return;
-    } catch (ttsErr) {
-      console.warn("Backend TTS endpoint failed, attempting browser voice fallback:", ttsErr.message);
-    }
-
-    // 3. Fall back to speechSynthesis ONLY when a voice for that language exists
+    // 1. FIRST: Use local speechSynthesis voice if one exists for the language (works offline)
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       const voices = (window.speechSynthesis.getVoices && window.speechSynthesis.getVoices().length > 0)
         ? window.speechSynthesis.getVoices()
@@ -328,10 +302,51 @@ export default function AIAssistantPage() {
       }
     }
 
-    // 4. Voice not available for this language
+    // 2. SECOND: If no local voice exists for te/hi, fall back to server TTS endpoint when online
+    const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+    if (isOnline) {
+      try {
+        const token = localStorage.getItem('krishisaathi_token');
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const ttsUrl = `${API_BASE_URL}/chat/tts?text=${encodeURIComponent(cleanText.slice(0, 500))}&lang=${encodeURIComponent(targetLang)}`;
+
+        const res = await fetch(ttsUrl, { headers });
+        if (!res.ok) {
+          throw new Error(`TTS server responded with ${res.status}`);
+        }
+
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const audio = new Audio(blobUrl);
+        currentAudioRef.current = audio;
+
+        audio.onended = () => {
+          URL.revokeObjectURL(blobUrl);
+          if (currentAudioRef.current === audio) {
+            currentAudioRef.current = null;
+          }
+          setSpeakingMessageId(null);
+        };
+
+        audio.onerror = () => {
+          URL.revokeObjectURL(blobUrl);
+          if (currentAudioRef.current === audio) {
+            currentAudioRef.current = null;
+          }
+          setSpeakingMessageId(null);
+        };
+
+        await audio.play();
+        return;
+      } catch (ttsErr) {
+        console.warn("Backend TTS endpoint failed:", ttsErr.message);
+      }
+    }
+
+    // 3. Otherwise: Voice not available for this language on this device
     setSpeakingMessageId(null);
-    setVoiceNotice("Voice not available for this language");
-    setTimeout(() => setVoiceNotice(''), 4000);
+    setVoiceNotice("Voice not available for this language on this device");
+    setTimeout(() => setVoiceNotice(''), 4500);
   };
 
   // Localized microphone error messages
@@ -540,6 +555,43 @@ export default function AIAssistantPage() {
     setIsSending(true);
     setLoadingStatus(null);
 
+    const getReportForOffline = () => {
+      if (activeReport) return activeReport;
+      try {
+        const cached = localStorage.getItem('krishisaathi_active_report');
+        if (cached) return JSON.parse(cached);
+      } catch {
+        // ignore
+      }
+      return null;
+    };
+
+    // If device is offline, immediately answer using local ICAR engine without network wait
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      const currentReport = getReportForOffline();
+      const offlineReply = answerOffline(text, detectedLang, currentReport, user?.name);
+      const botMsgId = Date.now() + 1;
+      const newBotMsg = {
+        id: botMsgId,
+        sender: 'bot',
+        text: offlineReply,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        lang: detectedLang,
+        isOfflineEngine: true
+      };
+
+      setMessages(prev => [...prev, newBotMsg]);
+      setIsSending(false);
+      setLoadingStatus(null);
+
+      if (autoSpeak) {
+        setTimeout(() => {
+          speakText(offlineReply, detectedLang, botMsgId);
+        }, 300);
+      }
+      return;
+    }
+
     // Helper to send with 25s timeout
     const sendWithTimeout = async (msgText, lang, timeoutMs = 25000) => {
       const controller = new AbortController();
@@ -613,69 +665,28 @@ export default function AIAssistantPage() {
       return;
     }
 
-    // Determine the real reason in the user's language (network error vs 401 vs 500)
-    const isNetwork = 
-      sendError?.isNetworkError ||
-      sendError?.name === 'TypeError' ||
-      (typeof navigator !== 'undefined' && !navigator.onLine) ||
-      /network|fetch|connection|failed to fetch/i.test(sendError?.message || '');
-
-    const is401 = 
-      sendError?.status === 401 ||
-      /401|unauthorized|session expired/i.test(sendError?.message || '');
-
-    const is500 = 
-      (typeof sendError?.status === 'number' && sendError.status >= 500) ||
-      /500|502|503|504|internal server error|server error/i.test(sendError?.message || '');
-
-    let offlineMessage = "Assistant is offline, please retry.";
-    if (is401) {
-      if (detectedLang === 'te') {
-        offlineMessage = "సహాయకుడు ఆఫ్‌లైన్‌లో ఉన్నారు: మీ లాగిన్ సెషన్ గడువు ముగిసింది (401). దయచేసి మళ్లీ లాగిన్ అవ్వండి.";
-      } else if (detectedLang === 'hi') {
-        offlineMessage = "सहायक ऑफ़लाइन है: सत्र समाप्त हो गया (401)। कृपया पुनः लॉगिन करें।";
-      } else {
-        offlineMessage = "Assistant is offline: Session expired (401). Please log in again.";
-      }
-    } else if (is500) {
-      if (detectedLang === 'te') {
-        offlineMessage = "సహాయకుడు ఆఫ్‌లైన్‌లో ఉన్నారు: సర్వర్ లోపం (500). దయచేసి కాసేపటి తర్వాత మళ్లీ ప్రయత్నించండి.";
-      } else if (detectedLang === 'hi') {
-        offlineMessage = "सहायक ऑफ़लाइन है: सर्वर त्रुटि (500)। कृपया थोड़ी देर बाद पुनः प्रयास करें।";
-      } else {
-        offlineMessage = "Assistant is offline: Server error (500). Please retry in a moment.";
-      }
-    } else if (isNetwork) {
-      if (detectedLang === 'te') {
-        offlineMessage = "సహాయకుడు ఆఫ్‌లైన్‌లో ఉన్నారు: నెట్‌వర్క్ లోపం. దయచేసి మీ ఇంటర్నెట్ కనెక్షన్ తనిఖీ చేసి మళ్లీ ప్రయత్నించండి.";
-      } else if (detectedLang === 'hi') {
-        offlineMessage = "सहायक ऑफ़लाइन है: नेटवर्क त्रुटि। कृपया अपना इंटरनेट कनेक्शन जांचें और पुनः प्रयास करें।";
-      } else {
-        offlineMessage = "Assistant is offline: Network error. Please check your connection and retry.";
-      }
-    } else {
-      if (detectedLang === 'te') {
-        offlineMessage = "సహాయకుడు ఆఫ్‌లైన్‌లో ఉన్నారు, దయచేసి మళ్లీ ప్రయత్నించండి.";
-      } else if (detectedLang === 'hi') {
-        offlineMessage = "सहायक ऑफ़लाइन है, कृपया पुनः प्रयास करें।";
-      }
-    }
-
+    // Backend call failed or timed out: Answer with deterministic offline ICAR engine
+    console.info("Switching to ICAR offline engine due to backend status:", sendError?.message || "offline");
+    const currentReport = getReportForOffline();
+    const offlineReply = answerOffline(text, detectedLang, currentReport, user?.name);
     const botMsgId = Date.now() + 1;
+
     const newBotMsg = {
       id: botMsgId,
       sender: 'bot',
-      text: offlineMessage,
+      text: offlineReply,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      lang: detectedLang
+      lang: detectedLang,
+      isOfflineEngine: true
     };
 
     setMessages(prev => [...prev, newBotMsg]);
     setIsSending(false);
+    setLoadingStatus(null);
 
     if (autoSpeak) {
       setTimeout(() => {
-        speakText(offlineMessage, detectedLang, botMsgId);
+        speakText(offlineReply, detectedLang, botMsgId);
       }, 300);
     }
   };
@@ -867,12 +878,23 @@ export default function AIAssistantPage() {
                       ? "bg-white text-[#26332B] border border-[#E2EBE2] shadow-xs rounded-tl-xs" 
                       : "bg-[#245C3A] text-white rounded-tr-xs shadow-xs font-medium"
                   }`}>
+                    {isBot && msg.isOfflineEngine && (
+                      <div className="mb-2">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#E8F0E7] text-[#245C3A] border border-[#C2DAC2]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#245C3A]" />
+                          <span>Offline mode - ICAR engine</span>
+                        </span>
+                      </div>
+                    )}
                     <p className="whitespace-pre-line">{msg.text}</p>
                   </div>
 
                   {/* Bubble Meta & Audio Play Button */}
                   <div className={`flex items-center gap-2 px-1 text-[11px] text-[#5C6E63] ${isBot ? "" : "justify-end"}`}>
                     <span>{msg.timestamp}</span>
+                    {isBot && msg.isOfflineEngine && (
+                      <span className="text-[10px] font-semibold text-[#245C3A]">ICAR Engine</span>
+                    )}
 
                     {isBot && (
                       <button
