@@ -26,7 +26,7 @@ import {
   getTranslatedSoilType, 
   getTranslatedCropName, 
   getTranslatedFertilizer, 
-  getDemoCardMeta 
+  getReportLabName 
 } from '../i18n/dataLookups';
 
 export default function DashboardPage() {
@@ -183,7 +183,17 @@ export default function DashboardPage() {
             </h2>
 
             <p className="text-xs text-[#5C6E63] leading-relaxed">
-              {t("soilAnalysis.testedLabel", "Tested")}: <strong>{getDemoCardMeta(activeReport, t).labName || activeReport?.labName}</strong> {t("common.date", "on")} {formatLocalDate(activeReport?.sampleDate, language)}. {t("myFarm.primarySoil", "Soil classification")}: <strong>{getTranslatedSoilType(activeReport?.soilType, t)}</strong>.
+              {(() => {
+                const labName = getReportLabName(activeReport, t);
+                return (
+                  <>
+                    {labName ? (
+                      <>{t("soilAnalysis.labLabel", "Laboratory")}: <strong>{labName}</strong> • </>
+                    ) : null}
+                    {t("soilAnalysis.testedLabel", "Tested")}: <strong>{formatLocalDate(activeReport?.sampleDate, language)}</strong>. {t("myFarm.primarySoil", "Soil classification")}: <strong>{getTranslatedSoilType(activeReport?.soilType, t)}</strong>.
+                  </>
+                );
+              })()}
             </p>
 
             <div className="p-3.5 rounded-2xl bg-[#E8F0E7] text-[#245C3A] text-xs font-semibold flex items-center gap-2.5 border border-[#D4E3D3]">

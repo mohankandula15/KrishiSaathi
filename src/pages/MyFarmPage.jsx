@@ -10,7 +10,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useSoil } from '../context/SoilContext';
 import { useTranslation } from 'react-i18next';
-import { getCardDisplayName, getTranslatedSoilType, getDemoCardMeta } from '../i18n/dataLookups';
+import { getCardDisplayName, getTranslatedSoilType, getReportLabName } from '../i18n/dataLookups';
 import { formatLocalDate } from '../i18n/languages';
 
 export default function MyFarmPage() {
@@ -209,8 +209,7 @@ export default function MyFarmPage() {
 
         <div className="space-y-3">
           {reports.map((report) => {
-            const cardMeta = getDemoCardMeta(report.id, t);
-            const cardLab = cardMeta?.labName || report.labName;
+            const cardLab = getReportLabName(report, t);
             const displayName = getCardDisplayName(report, t);
 
             return (
@@ -228,7 +227,7 @@ export default function MyFarmPage() {
                     )}
                   </div>
                   <p className="text-xs text-[#5C6E63]">
-                    {t('soilAnalysis.testedLabel', 'Tested')} {formatLocalDate(report.sampleDate, language)} • {t('soilAnalysis.labLabel', 'Laboratory')}: {cardLab} • {t('common.score', 'Score')}: <strong>{report.healthScore}/100</strong>
+                    {t('soilAnalysis.testedLabel', 'Tested')}: {formatLocalDate(report.sampleDate, language)}{cardLab ? <> • {t('soilAnalysis.labLabel', 'Laboratory')}: {cardLab}</> : null} • {t('common.score', 'Score')}: <strong>{report.healthScore}/100</strong>
                   </p>
                 </div>
 

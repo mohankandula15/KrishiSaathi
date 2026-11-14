@@ -20,6 +20,19 @@ import {
   answerOffline,
 } from '../src/engine/offlineAnswers.js';
 
+import {
+  formatLocalDate,
+} from '../src/i18n/languages.js';
+
+import {
+  getReportStableCode,
+  getReportTitle,
+  getReportLocation,
+  getReportLabName,
+  getCardDisplayName,
+  getDemoCardMeta,
+} from '../src/i18n/dataLookups.js';
+
 test('ICAR Rating Classifications', async (t) => {
   await t.test('Nitrogen threshold classification', () => {
     assert.equal(classifyNitrogen(185).rating, 'Low');
@@ -417,5 +430,98 @@ test('i18n Translation Integrity & Units Preservation', async (t) => {
     assert.ok(hi.ratings.deficient.includes('कमी'));
     assert.ok(te.ratings.sufficient.includes('సమృద్ధి'));
     assert.ok(hi.ratings.sufficient.includes('पर्याप्त'));
+  });
+
+  await t.test('Consistent Telugu ("నేల") and Hindi ("मिट्टी") terminology across locales', () => {
+    const teRaw = JSON.stringify(te);
+    const hiRaw = JSON.stringify(hi);
+
+    // Telugu must not use transliterations or "మట్టి"
+    assert.ok(!teRaw.includes('సాయిల్'), 'Telugu locale must not contain transliterated "సాయిల్"');
+    assert.ok(!teRaw.includes('మట్టి'), 'Telugu locale must use "నేల" instead of "మట్టి"');
+    assert.ok(!teRaw.includes('కార్డ్'), 'Telugu locale must use "కార్డు" instead of "కార్డ్"');
+
+    // Hindi must not use transliterations or "मृदा"
+    assert.ok(!hiRaw.includes('सॉइल'), 'Hindi locale must not contain transliterated "सॉइल"');
+    assert.ok(!hiRaw.includes('मृदा'), 'Hindi locale must use "मिट्टी" instead of "मृदा"');
+
+    // Verify active card translations
+    assert.equal(te.dashboard.activeCard, 'ప్రస్తుత నేల కార్డు');
+    assert.equal(hi.dashboard.activeCard, 'सक्रिय मिट्टी कार्ड');
+  });
+
+  await t.test('Regional date formatting with Intl.DateTimeFormat (no stray commas)', () => {
+    const formattedTe = formatLocalDate('2026-11-14', 'te');
+    assert.equal(formattedTe, '14 నవంబర్ 2026');
+    assert.ok(!formattedTe.includes(','), 'Telugu date should not contain stray commas');
+
+    const formattedHi = formatLocalDate('2026-11-14', 'hi');
+    assert.equal(formattedHi, '14 नवंबर 2026');
+    assert.ok(!formattedHi.includes(','), 'Hindi date should not contain stray commas');
+
+    const formattedEn = formatLocalDate('2026-11-14', 'en');
+    assert.equal(formattedEn, '14 November 2026');
+    assert.ok(!formattedEn.includes(','), 'English date should not contain stray commas');
+
+    // Sample date format: "15 Oct 2025"
+    assert.equal(formatLocalDate('15 Oct 2025', 'te'), '15 అక్టోబర్ 2025');
+    assert.equal(formatLocalDate('15 Oct 2025', 'hi'), '15 अक्टूबर 2025');
+  });
+
+  await t.test('Demo soil report localization and lab names', () => {
+    function makeT(dict) {
+      return (key, fallback) => {
+        const parts = key.split('.');
+        let cur = dict;
+        for (const p of parts) {
+          if (!cur || typeof cur !== 'object') return fallback || key;
+          cur = cur[p];
+        }
+        return cur !== undefined ? cur : (fallback || key);
+      };
+    }
+
+    const tTe = makeT(te);
+    const tHi = makeT(hi);
+    const tEn = makeT(en);
+
+    const punjabReport = { id: 'SHC-PB-2025-0891', title: 'North Field', location: 'Punjab', labName: 'PAU' };
+    const maharashtraReport = { id: 'SHC-MH-2025-4102', title: 'Canal Plot', location: 'Maharashtra', labName: 'KVK' };
+
+    // Stable codes
+    assert.equal(getReportStableCode(punjabReport), 'punjab');
+    assert.equal(getReportStableCode(maharashtraReport), 'maharashtra');
+    assert.equal(getReportStableCode('SHC-MH-2025-0412'), 'maharashtra');
+
+    // Localized demo titles
+    assert.ok(getReportTitle(punjabReport, tTe).includes('పంజాబ్'));
+    assert.ok(getReportTitle(punjabReport, tHi).includes('पंजाब'));
+    assert.ok(getReportTitle(punjabReport, tEn).includes('Punjab'));
+
+    // Localized lab names for demo cards
+    assert.equal(getReportLabName(punjabReport, tTe), 'జిల్లా నేల పరీక్ష ప్రయోగశాల, PAU క్యాంపస్, లూధియానా');
+    assert.equal(getReportLabName(punjabReport, tHi), 'जिला मिट्टी परीक्षण प्रयोगशाला, PAU परिसर, लुधियाना');
+    assert.equal(getReportLabName(punjabReport, tEn), 'District Soil Testing Laboratory, PAU Campus, Ludhiana');
+
+    assert.equal(getReportLabName(maharashtraReport, tTe), 'కృషి విజ్ఞాన కేంద్రం నేల పరీక్ష ప్రయోగశాల, బారామతి');
+    assert.equal(getReportLabName(maharashtraReport, tHi), 'कृषि विज्ञान केंद्र मिट्टी परीक्षण प्रयोगशाला, बारामती');
+
+    // User-typed custom report preserves exact user values and returns empty if no lab
+    const customUserReport = { id: 'custom-card-999', title: 'My Field Plot 4', location: 'Nellore', labName: 'Nellore Agri Lab' };
+    assert.equal(getReportStableCode(customUserReport), null);
+    assert.equal(getReportTitle(customUserReport, tTe), 'My Field Plot 4');
+    assert.equal(getReportLocation(customUserReport, tTe), 'Nellore');
+    assert.equal(getReportLabName(customUserReport, tTe), 'Nellore Agri Lab');
+
+    const customReportNoLab = { id: 'custom-card-888', title: 'My Field' };
+    assert.equal(getReportLabName(customReportNoLab, tTe), '');
+
+    // Card display names and demo meta
+    assert.equal(getCardDisplayName(punjabReport, tTe), '🌾 పంజాబ్ - ఒండ్రు నేల కార్డు');
+    const demoMetaPunjab = getDemoCardMeta(punjabReport, tTe);
+    assert.ok(demoMetaPunjab);
+    assert.equal(demoMetaPunjab.title, '🌾 పంజాబ్ - ఒండ్రు నేల కార్డు');
+    assert.equal(demoMetaPunjab.labName, 'జిల్లా నేల పరీక్ష ప్రయోగశాల, PAU క్యాంపస్, లూధియానా');
+    assert.equal(getDemoCardMeta(customUserReport, tTe), null);
   });
 });

@@ -189,21 +189,80 @@ export function isUUID(str) {
 }
 
 /**
+ * Resolves a demo report's stable code ('punjab', 'maharashtra', 'guntur').
+ * Returns null for custom/uploaded user cards.
+ */
+export function getReportStableCode(reportOrId) {
+  if (!reportOrId) return null;
+  const id = typeof reportOrId === 'string' ? reportOrId : (reportOrId.id || '');
+  if (!id || typeof id !== 'string') return null;
+
+  if (id === 'SHC-PB-2025-0891' || id === 'punjab' || id === 'demo-farmer-punjab' || id.includes('PB-2025')) {
+    return 'punjab';
+  }
+  if (id === 'SHC-MH-2025-4102' || id === 'SHC-MH-2025-0412' || id === 'maharashtra' || id === 'demo-farmer-maharashtra' || id.includes('MH-2025')) {
+    return 'maharashtra';
+  }
+  if (id === 'SHC-AP-2025-0104' || id === 'guntur' || id.includes('AP-2025')) {
+    return 'guntur';
+  }
+  return null;
+}
+
+/**
+ * Gets localized title for a report.
+ * Demo cards are localized based on their stable code.
+ * User-typed data (uploaded cards) stays as typed.
+ */
+export function getReportTitle(report, t) {
+  if (!report) return '';
+  const code = getReportStableCode(report);
+  if (code) {
+    return t(`data.demoReports.${code}.title`, report.title || '');
+  }
+  return report.title || '';
+}
+
+/**
+ * Gets localized location for a report.
+ * Demo cards are localized based on their stable code.
+ * User-typed data (uploaded cards) stays as typed.
+ */
+export function getReportLocation(report, t) {
+  if (!report) return '';
+  const code = getReportStableCode(report);
+  if (code) {
+    return t(`data.demoReports.${code}.location`, report.location || '');
+  }
+  return report.location || '';
+}
+
+/**
+ * Gets localized laboratory name for a report.
+ * Demo cards are localized based on their stable code.
+ * User-typed data (uploaded cards) stays as typed.
+ * Returns empty string if the report has no laboratory name.
+ */
+export function getReportLabName(report, t) {
+  if (!report) return '';
+  const code = getReportStableCode(report);
+  if (code) {
+    return t(`data.demoReports.${code}.labName`, report.labName || report.lab || '');
+  }
+  return report.labName || report.lab || '';
+}
+
+/**
  * Gets a human-readable name/number for a soil health card.
  * Never outputs a raw UUID.
  */
 export function getCardDisplayName(report, t) {
   if (!report) return t('common.card', 'Card');
 
-  // Preloaded benchmark demo cards
-  if (report.id === 'SHC-PB-2025-0891') {
-    return t('data.demoReports.punjab.title', 'Punjab - Alluvial Soil Card');
-  }
-  if (report.id === 'SHC-MH-2025-0412') {
-    return t('data.demoReports.maharashtra.title', 'Maharashtra - Black Soil Card');
-  }
-  if (report.id === 'SHC-AP-2025-0104') {
-    return t('data.demoReports.guntur.title', 'Guntur - Red Soil Card');
+  // Preloaded benchmark demo cards localized by stable code
+  const code = getReportStableCode(report);
+  if (code) {
+    return t(`data.demoReports.${code}.title`);
   }
 
   // If report has title and title is not a UUID
@@ -235,8 +294,8 @@ export function getCardDisplayName(report, t) {
  * Translates benchmark demo cards shown in SoilUploadModal & sample cards
  */
 export function getDemoCardMeta(reportOrId, t) {
-  const id = typeof reportOrId === 'string' ? reportOrId : reportOrId?.id;
-  if (id === 'SHC-PB-2025-0891') {
+  const code = getReportStableCode(reportOrId);
+  if (code === 'punjab') {
     return {
       title: t('data.demoReports.punjab.title', '🌾 Punjab - Alluvial Soil Card'),
       cropBadge: t('data.demoReports.punjab.cropBadge', 'Wheat/Paddy'),
@@ -245,7 +304,7 @@ export function getDemoCardMeta(reportOrId, t) {
       labName: t('data.demoReports.punjab.labName', 'District Soil Testing Laboratory, PAU Campus, Ludhiana')
     };
   }
-  if (id === 'SHC-MH-2025-0412') {
+  if (code === 'maharashtra') {
     return {
       title: t('data.demoReports.maharashtra.title', '🌱 Maharashtra - Black Soil Card'),
       cropBadge: t('data.demoReports.maharashtra.cropBadge', 'Cotton/Soybean'),
@@ -254,11 +313,14 @@ export function getDemoCardMeta(reportOrId, t) {
       labName: t('data.demoReports.maharashtra.labName', 'Krishi Vigyan Kendra Soil Lab, Baramati')
     };
   }
-  return {
-    title: t('data.demoReports.guntur.title', '🌶️ Andhra Pradesh - Red Soil Card'),
-    cropBadge: t('data.demoReports.guntur.cropBadge', 'Chilli/Cotton'),
-    description: t('data.demoReports.guntur.description', 'Medium N (210), High P (32), Moderate K (240)'),
-    location: t('data.demoReports.guntur.location', 'Tadikonda, Guntur, Andhra Pradesh'),
-    labName: t('data.demoReports.guntur.labName', 'Regional Agricultural Research Station (RARS) Lam, Guntur')
-  };
+  if (code === 'guntur') {
+    return {
+      title: t('data.demoReports.guntur.title', '🌶️ Andhra Pradesh - Red Soil Card'),
+      cropBadge: t('data.demoReports.guntur.cropBadge', 'Chilli/Cotton'),
+      description: t('data.demoReports.guntur.description', 'Medium N (210), High P (32), Moderate K (240)'),
+      location: t('data.demoReports.guntur.location', 'Tadikonda, Guntur, Andhra Pradesh'),
+      labName: t('data.demoReports.guntur.labName', 'Regional Agricultural Research Station (RARS) Lam, Guntur')
+    };
+  }
+  return null;
 }

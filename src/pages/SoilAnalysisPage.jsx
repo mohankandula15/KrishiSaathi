@@ -25,7 +25,7 @@ import { useSoil } from '../context/SoilContext';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { formatLocalDate } from '../i18n/languages';
-import { getSummaryLine, getTranslatedRating, getCardDisplayName } from '../i18n/dataLookups';
+import { getSummaryLine, getTranslatedRating, getCardDisplayName, getReportLocation, getReportLabName } from '../i18n/dataLookups';
 import WhatsAppShareReport from '../components/WhatsAppShareReport';
 
 export default function SoilAnalysisPage() {
@@ -98,9 +98,21 @@ export default function SoilAnalysisPage() {
               {getCardDisplayName(activeReport, t)}
             </h1>
 
-            <p className="text-xs text-[#5C6E63]">
-              {t('common.location', 'Location')}: <strong>{activeReport?.location}</strong> • {t('soilAnalysis.testedLabel', 'Tested')}: <strong>{formatLocalDate(activeReport?.sampleDate, language)}</strong> • {t('soilAnalysis.labLabel', 'Laboratory')}: <strong>{activeReport?.labName}</strong>
-            </p>
+            {(() => {
+              const location = getReportLocation(activeReport, t);
+              const labName = getReportLabName(activeReport, t);
+              return (
+                <p className="text-xs text-[#5C6E63]">
+                  {location ? (
+                    <>{t('common.location', 'Location')}: <strong>{location}</strong> • </>
+                  ) : null}
+                  {t('soilAnalysis.testedLabel', 'Tested')}: <strong>{formatLocalDate(activeReport?.sampleDate, language)}</strong>
+                  {labName ? (
+                    <> • {t('soilAnalysis.labLabel', 'Laboratory')}: <strong>{labName}</strong></>
+                  ) : null}
+                </p>
+              );
+            })()}
           </div>
 
           {/* Quick Actions & Report Switcher */}

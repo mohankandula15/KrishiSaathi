@@ -144,10 +144,12 @@ export function formatLocalDate(dateInput, lang = 'en', options = null) {
   }
 
   const locale = getLocaleForLanguage(lang);
-  const defaultOptions = options || { day: 'numeric', month: 'short', year: 'numeric' };
+  const defaultOptions = options || { day: 'numeric', month: 'long', year: 'numeric' };
 
   try {
-    return new Intl.DateTimeFormat(locale, defaultOptions).format(dateObj);
+    const formatted = new Intl.DateTimeFormat(locale, defaultOptions).format(dateObj);
+    // Strip any stray commas and normalize spacing across locales (e.g. te-IN: "14 నవంబర్ 2026")
+    return formatted.replace(/,/g, '').replace(/\s+/g, ' ').trim();
   } catch {
     return String(dateInput);
   }
