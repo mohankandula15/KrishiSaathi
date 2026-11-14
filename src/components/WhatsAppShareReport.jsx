@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   Copy, 
   Check, 
@@ -37,16 +38,11 @@ export default function WhatsAppShareReport({
   defaultVillage = '', 
   className = '' 
 }) {
-  const { user, language } = useAuth();
+  const { t } = useTranslation();
+  const { user, language, setLanguage } = useAuth();
 
-  // Language state: 'te' | 'hi' | 'en'
-  const [selectedLang, setSelectedLang] = useState(() => {
-    return localStorage.getItem('krishisaathi_preferred_lang') || 
-           localStorage.getItem('krishisaathi_lang') || 
-           user?.preferred_language || 
-           language || 
-           'te';
-  });
+  // Active language derived from AuthContext
+  const currentLang = (language && ['te', 'hi', 'en'].includes(language)) ? language : 'en';
 
   // Mobile number input (10 digits)
   const [mobileNumber, setMobileNumber] = useState('');
@@ -117,11 +113,11 @@ export default function WhatsAppShareReport({
   // Generate plain text report using local ICAR engine (100% offline, pure JS)
   const reportText = useMemo(() => {
     return formatSoilReportText(report, {
-      lang: selectedLang,
+      lang: currentLang,
       farmerName: farmerName.trim(),
       village: village.trim(),
     });
-  }, [report, selectedLang, farmerName, village]);
+  }, [report, currentLang, farmerName, village]);
 
   // Sanitize and format phone number for WhatsApp
   // Indian standard: 10 digits prefixed with 91
@@ -153,7 +149,7 @@ export default function WhatsAppShareReport({
 
     // Offline check: generating works offline, but opening wa.me requires internet
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      setOfflineNotice('Internet connection required to open WhatsApp. You can still copy the report text or listen to it offline.');
+      setOfflineNotice(t("whatsapp.offlineWarning", 'Internet connection required to open WhatsApp. You can still copy the report text or listen to it offline.'));
       return;
     }
 
@@ -230,7 +226,7 @@ export default function WhatsAppShareReport({
         ? window.speechSynthesis.getVoices()
         : availableVoices;
 
-      const targetFamily = selectedLang === 'te' ? 'te' : (selectedLang === 'hi' ? 'hi' : 'en');
+      const targetFamily = currentLang === 'te' ? 'te' : (currentLang === 'hi' ? 'hi' : 'en');
       const matchedVoice = voices.find(v => {
         const vLang = (v.lang || '').toLowerCase().replace('_', '-');
         const vName = (v.name || '').toLowerCase();
@@ -264,7 +260,7 @@ export default function WhatsAppShareReport({
       try {
         const token = localStorage.getItem('krishisaathi_token');
         const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        const ttsUrl = `${API_BASE_URL}/chat/tts?text=${encodeURIComponent(cleanText.slice(0, 500))}&lang=${encodeURIComponent(selectedLang)}`;
+        const ttsUrl = `${API_BASE_URL}/chat/tts?text=${encodeURIComponent(cleanText.slice(0, 500))}&lang=${encodeURIComponent(currentLang)}`;
 
         const res = await fetch(ttsUrl, { headers });
         if (!res.ok) {
@@ -283,7 +279,7 @@ export default function WhatsAppShareReport({
         audio.onerror = () => {
           setIsPlaying(false);
           currentAudioRef.current = null;
-          setAudioNotice('Unable to play audio stream.');
+          setAudioNotice(t("whatsapp.audioNotice", 'Unable to play audio stream.'));
         };
 
         setIsPlaying(true);
@@ -316,14 +312,14 @@ export default function WhatsAppShareReport({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-base sm:text-lg font-black tracking-tight">
-                  Send Advisory on WhatsApp
+                  {t("whatsapp.title", "Send Advisory on WhatsApp")}
                 </h3>
                 <span className="text-[10px] font-bold uppercase tracking-wider bg-white/20 text-emerald-100 px-2.5 py-0.5 rounded-full border border-white/20">
-                  FPO Tool
+                  {t("whatsapp.fpoBadge", "FPO Tool")}
                 </span>
               </div>
               <p className="text-xs text-emerald-100/90 mt-0.5">
-                Instant ICAR plain-text report for farmers, relatives, or field agents (under 1500 chars)
+                {t("whatsapp.subtitle", "Instant ICAR plain-text report for farmers, relatives, or field agents (under 1500 chars)")}
               </p>
             </div>
           </div>
@@ -339,7 +335,7 @@ export default function WhatsAppShareReport({
                 key={l.code}
                 type="button"
                 onClick={() => {
-                  setSelectedLang(l.code);
+                  if (setLanguage) setLanguage(l.code);
                   if (isPlaying) {
                     if (currentAudioRef.current) currentAudioRef.current.pause();
                     if (window.speechSynthesis) window.speechSynthesis.cancel();
@@ -347,7 +343,7 @@ export default function WhatsAppShareReport({
                   }
                 }}
                 className={`px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer ${
-                  selectedLang === l.code
+                  currentLang === l.code
                     ? 'bg-white text-[#245C3A] shadow-xs'
                     : 'text-white/80 hover:text-white hover:bg-white/10'
                 }`}
@@ -367,7 +363,7 @@ export default function WhatsAppShareReport({
           {/* Mobile Number Input */}
           <div className="sm:col-span-1 space-y-1.5">
             <label className="block text-xs font-bold text-[#5C6E63] uppercase tracking-wider">
-              Farmer / Relative Mobile
+              {t("whatsapp.mobileLabel", "Farmer / Relative Mobile")}
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-xs font-bold text-[#245C3A] border-r border-[#E2EBE2] pr-2.5 my-1.5">
@@ -378,19 +374,19 @@ export default function WhatsAppShareReport({
                 maxLength={10}
                 value={mobileNumber}
                 onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, ''))}
-                placeholder="98765 43210 (Optional)"
+                placeholder={t("whatsapp.mobilePlaceholder", "98765 43210 (Optional)")}
                 className="w-full pl-14 pr-3 py-2.5 rounded-xl border border-[#E2EBE2] bg-[#F8FAF7] text-xs font-bold text-[#26332B] placeholder:text-[#5C6E63]/60 focus:bg-white focus:ring-2 focus:ring-[#245C3A] focus:outline-hidden transition"
               />
             </div>
             <p className="text-[10px] text-[#5C6E63]">
-              Leave empty to pick any contact in WhatsApp.
+              {t("whatsapp.mobileHelp", "Leave empty to pick any contact in WhatsApp.")}
             </p>
           </div>
 
           {/* Farmer Name Input */}
           <div className="space-y-1.5">
             <label className="block text-xs font-bold text-[#5C6E63] uppercase tracking-wider">
-              Farmer Name
+              {t("whatsapp.nameLabel", "Farmer Name")}
             </label>
             <div className="relative">
               <User className="w-3.5 h-3.5 text-[#5C6E63] absolute left-3 top-3 pointer-events-none" />
@@ -408,7 +404,7 @@ export default function WhatsAppShareReport({
           {/* Village Input */}
           <div className="space-y-1.5">
             <label className="block text-xs font-bold text-[#5C6E63] uppercase tracking-wider">
-              Village / Location
+              {t("whatsapp.villageLabel", "Village / Location")}
             </label>
             <div className="relative">
               <MapPin className="w-3.5 h-3.5 text-[#5C6E63] absolute left-3 top-3 pointer-events-none" />
@@ -440,7 +436,7 @@ export default function WhatsAppShareReport({
           <div className="p-3.5 rounded-2xl bg-stone-50 border border-stone-200 text-xs text-stone-800 flex items-start gap-2.5 animate-in fade-in">
             <AlertCircle className="w-4 h-4 shrink-0 text-stone-600 mt-0.5" />
             <div>
-              <p className="font-bold text-stone-900">Audio Notice</p>
+              <p className="font-bold text-stone-900">{t("whatsapp.audioNotice", "Audio Notice")}</p>
               <p className="text-stone-700 mt-0.5">{audioNotice}</p>
             </div>
           </div>
@@ -456,7 +452,7 @@ export default function WhatsAppShareReport({
             className="flex-1 sm:flex-none px-5 py-3 rounded-2xl bg-[#25D366] hover:bg-[#20BA56] active:scale-98 text-white font-black text-xs flex items-center justify-center gap-2.5 shadow-xs transition cursor-pointer"
           >
             <WhatsAppIcon className="w-4 h-4" />
-            <span>Send on WhatsApp</span>
+            <span>{t("whatsapp.sendBtn", "Send on WhatsApp")}</span>
           </button>
 
           {/* Copy Text Report */}
@@ -472,12 +468,12 @@ export default function WhatsAppShareReport({
             {copied ? (
               <>
                 <Check className="w-4 h-4 text-emerald-600" />
-                <span className="text-emerald-700 font-black">Copied to Clipboard!</span>
+                <span className="text-emerald-700 font-black">{t("whatsapp.copied", "Copied to Clipboard!")}</span>
               </>
             ) : (
               <>
                 <Copy className="w-4 h-4 text-[#5C6E63]" />
-                <span>Copy Text Report</span>
+                <span>{t("whatsapp.copyBtn", "Copy Text Report")}</span>
               </>
             )}
           </button>
@@ -495,12 +491,12 @@ export default function WhatsAppShareReport({
             {isPlaying ? (
               <>
                 <VolumeX className="w-4 h-4 text-rose-600" />
-                <span>Stop Listening</span>
+                <span>{t("whatsapp.stopListenBtn", "Stop Listening")}</span>
               </>
             ) : (
               <>
                 <Volume2 className="w-4 h-4 text-[#245C3A]" />
-                <span>Listen Report</span>
+                <span>{t("whatsapp.listenBtn", "Listen Report")}</span>
               </>
             )}
           </button>
@@ -524,7 +520,7 @@ export default function WhatsAppShareReport({
             <div className="flex items-center justify-between text-xs text-[#5C6E63] border-b border-[#E2EBE2] pb-2">
               <span className="font-bold uppercase tracking-wider flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-[#245C3A]" />
-                WhatsApp Message Preview
+                {t("whatsapp.previewTitle", "WhatsApp Message Preview")}
               </span>
               <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded-md border border-[#E2EBE2]">
                 {reportText.length} / 1500 characters

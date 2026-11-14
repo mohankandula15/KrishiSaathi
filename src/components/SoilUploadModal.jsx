@@ -16,14 +16,22 @@ import {
   FileText
 } from 'lucide-react';
 import { useSoil } from '../context/SoilContext';
+import { useTranslation } from 'react-i18next';
 import { SAMPLE_SOIL_REPORTS } from '../data/sampleSoilReports';
 import { api } from '../services/api';
 import { classifyLive, analyzeSoil } from '../engine/icarEngine';
 import WhatsAppShareReport from './WhatsAppShareReport';
 
 export default function SoilUploadModal() {
+  const { t } = useTranslation();
   const { isUploadModalOpen, setIsUploadModalOpen, addReport } = useSoil();
   const navigate = useNavigate();
+
+  const getRatingText = (rating) => {
+    if (!rating) return '';
+    const key = rating.toLowerCase().replace(/[^a-z]/g, '');
+    return t(`ratings.${key}`, rating);
+  };
 
   // Modal Step: 'upload' | 'processing' | 'validation' | 'error'
   const [modalStep, setModalStep] = useState('upload');
@@ -386,7 +394,7 @@ export default function SoilUploadModal() {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-lg font-black">
-                  {modalStep === 'validation' ? "Validate & Confirm Soil Data" : (modalStep === 'error' ? "Extraction Error" : "Upload Soil Health Card")}
+                  {modalStep === 'validation' ? t('uploadModal.step2Title', 'Validate & Confirm Soil Data') : (modalStep === 'error' ? t('common.error', 'Extraction Error') : t('uploadModal.step1Title', 'Upload Soil Health Card'))}
                 </h3>
                 <span className="text-[10px] uppercase font-bold bg-[#E8F0E7] text-[#245C3A] px-2 py-0.5 rounded-full">
                   {modalStep === 'validation' ? "Step 2 of 2" : (modalStep === 'error' ? "Notice" : "Step 1 of 2")}
@@ -394,10 +402,10 @@ export default function SoilUploadModal() {
               </div>
               <p className="text-emerald-100 text-xs mt-0.5">
                 {modalStep === 'validation' 
-                  ? "Verify extracted values. Correct any inaccuracies or missing items below." 
+                  ? t('uploadModal.step2Sub', 'Verify extracted values. Correct any inaccuracies or missing items below.') 
                   : (modalStep === 'error'
                       ? "Unable to extract data from this file."
-                      : "Supports PDF, JPG, JPEG, and PNG soil testing documents."
+                      : t('uploadModal.step1Sub', 'Supports PDF, JPG, JPEG, and PNG soil testing documents.')
                     )
                 }
               </p>
@@ -424,7 +432,7 @@ export default function SoilUploadModal() {
                     <AlertCircle className="w-4 h-4 shrink-0 text-amber-700 mt-0.5" />
                     <div>
                       <p className="font-bold text-amber-950">Offline Mode Active</p>
-                      <p className="text-[#5C6E63] mt-0.5">Card OCR scan requires an internet connection. Enter your soil test values manually to run the offline ICAR analysis engine.</p>
+                      <p className="text-[#5C6E63] mt-0.5">{t('uploadModal.offlineNotice', 'Card OCR scan requires an internet connection. Enter values manually offline.')}</p>
                     </div>
                   </div>
                   <button
@@ -432,7 +440,7 @@ export default function SoilUploadModal() {
                     onClick={handleEnterManually}
                     className="shrink-0 text-xs font-bold text-[#245C3A] bg-white px-3 py-1.5 rounded-xl border border-amber-300 hover:bg-[#E8F0E7] shadow-xs transition cursor-pointer"
                   >
-                    Enter Manually
+                    {t('uploadModal.enterManually', 'Enter Manually')}
                   </button>
                 </div>
               )}
@@ -490,14 +498,14 @@ export default function SoilUploadModal() {
                         htmlFor="soil-card-file-input"
                         className="cursor-pointer text-sm font-black text-[#245C3A] hover:underline"
                       >
-                        Browse Document or Take Photo
+                        {t('uploadModal.dragDrop', 'Drag and drop your Soil Health Card here, or browse files')}
                       </label>
                       <p className="text-xs text-[#5C6E63] mt-1">
-                        Accepts PDF, JPG, JPEG, and PNG (Max 15MB)
+                        {t('uploadModal.maxSize', 'Max file size: 15MB. Formats: PDF, JPG, PNG')}
                       </p>
                     </div>
                     <p className="text-[11px] text-[#5C6E63]">
-                      Drag and drop your Soil Health Card or lab certificate here
+                      PDF, JPG, JPEG, PNG
                     </p>
                   </div>
                 )}
@@ -520,7 +528,7 @@ export default function SoilUploadModal() {
                   className="font-bold text-[#245C3A] hover:underline cursor-pointer flex items-center gap-1.5"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
-                  <span>Enter values manually</span>
+                  <span>{t('uploadModal.enterManually', 'Enter values manually')}</span>
                 </button>
               </div>
 
@@ -541,7 +549,7 @@ export default function SoilUploadModal() {
               <div className="pt-3 border-t border-[#E2EBE2]">
                 <div className="flex items-center gap-2 text-xs font-bold text-[#5C6E63] uppercase tracking-wide mb-3">
                   <Layers className="w-4 h-4 text-[#245C3A]" />
-                  <span>Or Test with Preloaded Benchmark Cards</span>
+                  <span>{t('uploadModal.benchmarkNotice', 'Or test with preloaded benchmark cards:')}</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -623,7 +631,7 @@ export default function SoilUploadModal() {
                   Extraction Failed
                 </h4>
                 <p className="text-sm text-[#5C6E63]">
-                  Could not read this card. Check your connection or enter values manually
+                  {t('uploadModal.couldNotRead', 'Could not read this card. Check your connection or enter values manually')}
                 </p>
               </div>
 
@@ -634,7 +642,7 @@ export default function SoilUploadModal() {
                   className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-[#E2EBE2] hover:bg-[#F8FAF7] text-[#26332B] font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer"
                 >
                   <RotateCcw className="w-4 h-4 text-[#5C6E63]" />
-                  <span>Try again</span>
+                  <span>{t('uploadModal.tryAgain', 'Try Again')}</span>
                 </button>
 
                 <button
@@ -643,7 +651,7 @@ export default function SoilUploadModal() {
                   className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#245C3A] hover:bg-[#1B462C] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition cursor-pointer"
                 >
                   <Edit3 className="w-4 h-4" />
-                  <span>Enter values manually</span>
+                  <span>{t('uploadModal.enterManually', 'Enter values manually')}</span>
                 </button>
               </div>
             </div>
@@ -690,7 +698,7 @@ export default function SoilUploadModal() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-black uppercase tracking-wider text-[#5C6E63]">
-                    Primary Nutrients & Soil Chemistry
+                    {t('uploadModal.coreNutrients', 'Core Soil Parameters (NPK & pH)')}
                   </span>
                   <span className="text-[11px] text-[#5C6E63]">Values editable</span>
                 </div>
@@ -700,10 +708,10 @@ export default function SoilUploadModal() {
                   {/* Nitrogen */}
                   <div className={`p-3 rounded-xl border transition-all ${missingFlags.nitrogen ? "bg-amber-50/50 border-amber-300" : "bg-[#F8FAF7] border-[#E2EBE2]"}`}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold text-[#5C6E63]">Available Nitrogen (N)</span>
+                      <span className="text-xs font-bold text-[#5C6E63]">{t('nutrients.nitrogen', 'Nitrogen (N)')}</span>
                       {classifyLive('nitrogen', params.nitrogen) && (
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${classifyLive('nitrogen', params.nitrogen).color}`}>
-                          {classifyLive('nitrogen', params.nitrogen).label}
+                          {getRatingText(classifyLive('nitrogen', params.nitrogen).label)}
                         </span>
                       )}
                     </div>
@@ -726,10 +734,10 @@ export default function SoilUploadModal() {
                   {/* Phosphorus */}
                   <div className={`p-3 rounded-xl border transition-all ${missingFlags.phosphorus ? "bg-amber-50/50 border-amber-300" : "bg-[#F8FAF7] border-[#E2EBE2]"}`}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold text-[#5C6E63]">Available Phosphorus (P)</span>
+                      <span className="text-xs font-bold text-[#5C6E63]">{t('nutrients.phosphorus', 'Phosphorus (P)')}</span>
                       {classifyLive('phosphorus', params.phosphorus) && (
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${classifyLive('phosphorus', params.phosphorus).color}`}>
-                          {classifyLive('phosphorus', params.phosphorus).label}
+                          {getRatingText(classifyLive('phosphorus', params.phosphorus).label)}
                         </span>
                       )}
                     </div>
@@ -752,10 +760,10 @@ export default function SoilUploadModal() {
                   {/* Potassium */}
                   <div className={`p-3 rounded-xl border transition-all ${missingFlags.potassium ? "bg-amber-50/50 border-amber-300" : "bg-[#F8FAF7] border-[#E2EBE2]"}`}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold text-[#5C6E63]">Available Potassium (K)</span>
+                      <span className="text-xs font-bold text-[#5C6E63]">{t('nutrients.potassium', 'Potassium (K)')}</span>
                       {classifyLive('potassium', params.potassium) && (
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${classifyLive('potassium', params.potassium).color}`}>
-                          {classifyLive('potassium', params.potassium).label}
+                          {getRatingText(classifyLive('potassium', params.potassium).label)}
                         </span>
                       )}
                     </div>
@@ -778,10 +786,10 @@ export default function SoilUploadModal() {
                   {/* Soil pH */}
                   <div className={`p-3 rounded-xl border transition-all ${missingFlags.ph ? "bg-amber-50/50 border-amber-300" : "bg-[#F8FAF7] border-[#E2EBE2]"}`}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold text-[#5C6E63]">Soil Reaction (pH)</span>
+                      <span className="text-xs font-bold text-[#5C6E63]">{t('nutrients.ph', 'Soil Reaction (pH)')}</span>
                       {classifyLive('ph', params.ph) && (
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${classifyLive('ph', params.ph).color}`}>
-                          {classifyLive('ph', params.ph).label}
+                          {getRatingText(classifyLive('ph', params.ph).label)}
                         </span>
                       )}
                     </div>
@@ -804,10 +812,10 @@ export default function SoilUploadModal() {
                   {/* Organic Carbon */}
                   <div className={`p-3 rounded-xl border transition-all ${missingFlags.organicCarbon ? "bg-amber-50/50 border-amber-300" : "bg-[#F8FAF7] border-[#E2EBE2]"}`}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold text-[#5C6E63]">Organic Carbon (OC)</span>
+                      <span className="text-xs font-bold text-[#5C6E63]">{t('nutrients.organicCarbon', 'Organic Carbon (OC)')}</span>
                       {classifyLive('organicCarbon', params.organicCarbon) && (
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${classifyLive('organicCarbon', params.organicCarbon).color}`}>
-                          {classifyLive('organicCarbon', params.organicCarbon).label}
+                          {getRatingText(classifyLive('organicCarbon', params.organicCarbon).label)}
                         </span>
                       )}
                     </div>
@@ -827,10 +835,10 @@ export default function SoilUploadModal() {
                   {/* Electrical Conductivity */}
                   <div className={`p-3 rounded-xl border transition-all ${missingFlags.ec ? "bg-amber-50/50 border-amber-300" : "bg-[#F8FAF7] border-[#E2EBE2]"}`}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold text-[#5C6E63]">Electrical Conductivity (EC)</span>
+                      <span className="text-xs font-bold text-[#5C6E63]">{t('nutrients.ec', 'Electrical Conductivity (EC)')}</span>
                       {classifyLive('ec', params.ec) && (
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${classifyLive('ec', params.ec).color}`}>
-                          {classifyLive('ec', params.ec).label}
+                          {getRatingText(classifyLive('ec', params.ec).label)}
                         </span>
                       )}
                     </div>
@@ -853,7 +861,7 @@ export default function SoilUploadModal() {
               {/* 2. Secondary & Micronutrients (Foldable / Quick Grid) */}
               <div className="space-y-3 pt-2">
                 <span className="text-xs font-black uppercase tracking-wider text-[#5C6E63] block">
-                  Micronutrients (ppm)
+                  {t('uploadModal.micronutrients', 'Secondary Nutrients & Micronutrients')} (ppm)
                 </span>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
@@ -861,10 +869,10 @@ export default function SoilUploadModal() {
                   {/* Zinc */}
                   <div className="p-2.5 rounded-xl bg-[#F8FAF7] border border-[#E2EBE2]">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="font-bold text-[#5C6E63]">Zinc (Zn)</span>
+                      <span className="font-bold text-[#5C6E63]">{t('nutrients.zinc', 'Zinc (Zn)')}</span>
                       {classifyLive('zinc', params.zinc) && (
                         <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${classifyLive('zinc', params.zinc).color}`}>
-                          {classifyLive('zinc', params.zinc).label}
+                          {getRatingText(classifyLive('zinc', params.zinc).label)}
                         </span>
                       )}
                     </div>
@@ -881,10 +889,10 @@ export default function SoilUploadModal() {
                   {/* Sulphur */}
                   <div className="p-2.5 rounded-xl bg-[#F8FAF7] border border-[#E2EBE2]">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="font-bold text-[#5C6E63]">Sulphur (S)</span>
+                      <span className="font-bold text-[#5C6E63]">{t('nutrients.sulphur', 'Sulphur (S)')}</span>
                       {classifyLive('sulphur', params.sulphur) && (
                         <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${classifyLive('sulphur', params.sulphur).color}`}>
-                          {classifyLive('sulphur', params.sulphur).label}
+                          {getRatingText(classifyLive('sulphur', params.sulphur).label)}
                         </span>
                       )}
                     </div>
@@ -900,7 +908,7 @@ export default function SoilUploadModal() {
 
                   {/* Iron */}
                   <div className="p-2.5 rounded-xl bg-[#F8FAF7] border border-[#E2EBE2]">
-                    <span className="font-bold text-[#5C6E63] block mb-1">Iron (Fe)</span>
+                    <span className="font-bold text-[#5C6E63] block mb-1">{t('nutrients.iron', 'Iron (Fe)')}</span>
                     <input
                       type="number"
                       step="0.1"
@@ -913,7 +921,7 @@ export default function SoilUploadModal() {
 
                   {/* Boron */}
                   <div className="p-2.5 rounded-xl bg-[#F8FAF7] border border-[#E2EBE2]">
-                    <span className="font-bold text-[#5C6E63] block mb-1">Boron (B)</span>
+                    <span className="font-bold text-[#5C6E63] block mb-1">{t('nutrients.boron', 'Boron (B)')}</span>
                     <input
                       type="number"
                       step="0.01"
@@ -940,7 +948,7 @@ export default function SoilUploadModal() {
                   className="px-4 py-2.5 rounded-xl bg-[#F8FAF7] hover:bg-[#E8F0E7] text-[#5C6E63] hover:text-[#26332B] text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Re-upload</span>
+                  <span>{t('uploadModal.reupload', 'Re-upload')}</span>
                 </button>
 
                 <button
@@ -949,7 +957,7 @@ export default function SoilUploadModal() {
                   className="px-6 py-2.5 rounded-xl bg-[#245C3A] hover:bg-[#1B462C] text-white font-bold text-xs flex items-center gap-2 shadow-xs transition active:scale-98 cursor-pointer"
                 >
                   <Check className="w-4 h-4" />
-                  <span>Confirm & Save Soil Health Card</span>
+                  <span>{t('uploadModal.confirmSave', 'Confirm & Save Soil Health Card')}</span>
                 </button>
               </div>
 
@@ -962,7 +970,7 @@ export default function SoilUploadModal() {
         <div className="px-6 py-3 bg-[#F8FAF7] border-t border-[#E2EBE2] flex items-center justify-between text-xs text-[#5C6E63] shrink-0">
           <span className="flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4 text-[#245C3A]" />
-            ICAR Scientific Standards Verified
+            {t('common.disclaimer', 'Ratings follow ICAR Soil Health Card standards.')}
           </span>
           <span className="font-semibold text-[#245C3A]">KrishiSaathi AI Engine</span>
         </div>

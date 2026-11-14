@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { 
   Menu, 
   UploadCloud, 
@@ -7,42 +8,62 @@ import {
   ChevronDown, 
   Bot, 
   FileText, 
-  Check, 
-  Sparkles,
-  MapPin
+  Check
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSoil } from '../context/SoilContext';
 import { SUPPORTED_LANGUAGES } from '../data/sampleSoilReports';
 
 export default function DashboardHeader({ setMobileOpen }) {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, language, setLanguage } = useAuth();
+  const { language, setLanguage } = useAuth();
   const { reports, activeReport, setActiveReportId, setIsUploadModalOpen } = useSoil();
 
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [reportMenuOpen, setReportMenuOpen] = useState(false);
 
-  // Derive title from current path
+  // Derive title from current path using i18n
   const getPageInfo = () => {
     switch (location.pathname) {
       case '/dashboard':
-        return { title: "Farm Dashboard", subtitle: "Real-time soil health & farm intelligence" };
+        return { 
+          title: t("header.titles.dashboard", "Farm Dashboard"), 
+          subtitle: t("header.titles.dashboardSub", "Real-time soil health & farm intelligence") 
+        };
       case '/soil-analysis':
-        return { title: "Soil Health Analysis", subtitle: "NPK diagnostics, pH scale & micronutrient metrics" };
+        return { 
+          title: t("header.titles.soilAnalysis", "Soil Health Analysis"), 
+          subtitle: t("header.titles.soilAnalysisSub", "NPK diagnostics, pH scale & micronutrient metrics") 
+        };
       case '/crop-recommendations':
-        return { title: "Crop Recommendations", subtitle: "Soil-matched high-yield crop varieties" };
+        return { 
+          title: t("header.titles.cropRecommendations", "Crop Recommendations"), 
+          subtitle: t("header.titles.cropRecommendationsSub", "Soil-matched high-yield crop varieties") 
+        };
       case '/fertilizer-calculator':
-        return { title: "Fertilizer Calculator", subtitle: "Precision acreage-based dosage & cost optimizer" };
+        return { 
+          title: t("header.titles.fertilizerCalculator", "Fertilizer Calculator"), 
+          subtitle: t("header.titles.fertilizerCalculatorSub", "Precision acreage-based dosage & cost optimizer") 
+        };
       case '/ai-assistant':
-        return { title: "AI Agronomy Assistant", subtitle: "Multilingual voice & conversational guidance" };
+        return { 
+          title: t("header.titles.aiAssistant", "AI Agronomy Assistant"), 
+          subtitle: t("header.titles.aiAssistantSub", "Multilingual voice & conversational guidance") 
+        };
       case '/my-farm':
-        return { title: "My Farm Profile", subtitle: "Field parcels, soil history & micro-climate" };
+        return { 
+          title: t("header.titles.myFarm", "My Farm Profile"), 
+          subtitle: t("header.titles.myFarmSub", "Field parcels, soil history & micro-climate") 
+        };
       case '/settings':
-        return { title: "Account & Preferences", subtitle: "Profile parameters, language & notifications" };
+        return { 
+          title: t("header.titles.settings", "Account & Preferences"), 
+          subtitle: t("header.titles.settingsSub", "Profile parameters, language & notifications") 
+        };
       default:
-        return { title: "Dashboard", subtitle: "KrishiSaathi SaaS" };
+        return { title: t("nav.dashboard", "Dashboard"), subtitle: "KrishiSaathi" };
     }
   };
 
@@ -89,7 +110,7 @@ export default function DashboardHeader({ setMobileOpen }) {
               title="Active Soil Report"
             >
               <FileText className="w-4 h-4 text-[#245C3A]" />
-              <span className="hidden md:inline font-bold">Card:</span>
+              <span className="hidden md:inline font-bold">{t("common.card", "Card")}:</span>
               <span className="truncate max-w-[100px] sm:max-w-[140px] font-mono font-medium">
                 {activeReport?.id}
               </span>
@@ -100,10 +121,10 @@ export default function DashboardHeader({ setMobileOpen }) {
               <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-[#E2EBE2] py-2 z-50 animate-in fade-in slide-in-from-top-2">
                 <div className="px-3.5 py-1.5 border-b border-[#E2EBE2] flex items-center justify-between">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-[#5C6E63]">
-                    Switch Soil Card
+                    {t("header.switchSoilCard", "Switch Soil Card")}
                   </span>
                   <span className="text-[10px] bg-[#E8F0E7] text-[#245C3A] font-bold px-2 py-0.5 rounded-full">
-                    {reports.length} Available
+                    {reports.length} {t("header.availableCards", "Available")}
                   </span>
                 </div>
                 <div className="max-h-60 overflow-y-auto py-1">
@@ -121,7 +142,7 @@ export default function DashboardHeader({ setMobileOpen }) {
                     >
                       <div className="min-w-0">
                         <p className="font-bold truncate">{rep.title}</p>
-                        <p className="text-[11px] text-[#5C6E63] font-mono">{rep.id} • Score: {rep.healthScore}/100</p>
+                        <p className="text-[11px] text-[#5C6E63] font-mono">{rep.id} • {t("common.score", "Score")}: {rep.healthScore}/100</p>
                       </div>
                       {rep.id === activeReport?.id && (
                         <Check className="w-4 h-4 text-[#245C3A] shrink-0" />
@@ -140,7 +161,7 @@ export default function DashboardHeader({ setMobileOpen }) {
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#245C3A] hover:bg-[#1B462C] text-white text-xs font-bold shadow-xs hover:shadow-md transition active:scale-98 cursor-pointer"
           >
             <UploadCloud className="w-4 h-4 text-emerald-100" />
-            <span className="hidden sm:inline">Upload Report</span>
+            <span className="hidden sm:inline">{t("header.uploadReport", "Upload Report")}</span>
           </button>
 
           {/* Quick AI Trigger */}
@@ -151,7 +172,7 @@ export default function DashboardHeader({ setMobileOpen }) {
             title="Ask AI Assistant"
           >
             <Bot className="w-4 h-4 text-[#245C3A]" />
-            <span>AI Advisor</span>
+            <span>{t("header.aiAdvisor", "AI Advisor")}</span>
           </button>
 
           {/* Language Selector */}
@@ -173,7 +194,7 @@ export default function DashboardHeader({ setMobileOpen }) {
             {langMenuOpen && (
               <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-[#E2EBE2] py-2 z-50 animate-in fade-in slide-in-from-top-2">
                 <div className="px-3.5 py-1.5 border-b border-[#E2EBE2] text-[11px] font-bold uppercase tracking-wider text-[#5C6E63]">
-                  Select Language
+                  {t("header.selectLanguage", "Select Language")}
                 </div>
                 <div className="max-h-60 overflow-y-auto py-1">
                   {SUPPORTED_LANGUAGES.map((lang) => (

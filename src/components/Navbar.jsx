@@ -15,9 +15,11 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSoil } from '../context/SoilContext';
+import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES } from '../data/sampleSoilReports';
 
 export default function Navbar() {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout, language, setLanguage } = useAuth();
@@ -28,10 +30,10 @@ export default function Navbar() {
   const isActive = (path) => location.pathname === path;
 
   const navLinks = [
-    { name: "Home", path: "/" },
-    { name: "Farmer Dashboard", path: "/dashboard" },
-    { name: "Soil Analysis", path: "/soil-analysis" },
-    { name: "AI Assistant", path: "/ai-assistant", badge: "Voice" },
+    { name: t('nav.home', 'Home'), path: "/" },
+    { name: t('nav.dashboard', 'Farmer Dashboard'), path: "/dashboard" },
+    { name: t('nav.soilAnalysis', 'Soil Analysis'), path: "/soil-analysis" },
+    { name: t('nav.aiAssistant', 'AI Assistant'), path: "/ai-assistant", badge: "Voice" },
   ];
 
   return (
@@ -124,7 +126,7 @@ export default function Navbar() {
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-stone-950 shadow-md shadow-amber-500/20 transition-all hover:scale-[1.02] active:scale-95"
             >
               <UploadCloud className="w-4 h-4 text-stone-950" />
-              <span>Upload Soil Report</span>
+              <span>{t('header.uploadReport', 'Upload Soil Report')}</span>
             </button>
 
             {/* User Profile or Login */}

@@ -12,9 +12,11 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES } from '../data/sampleSoilReports';
 
 export default function SettingsPage() {
+  const { t } = useTranslation();
   const { user, updateProfile, language, setLanguage } = useAuth();
 
   const [formData, setFormData] = useState({
@@ -82,10 +84,10 @@ export default function SettingsPage() {
           </div>
           <div>
             <h1 className="text-xl sm:text-2xl font-black text-[#26332B] tracking-tight">
-              Settings & Farm Preferences
+              {t('settings.title', 'Settings & Farm Preferences')}
             </h1>
             <p className="text-xs text-[#5C6E63] mt-0.5">
-              Manage your farmer profile, regional language, and farm measurement units
+              {t('settings.subtitle', 'Manage your farmer profile, regional language, and farm measurement units')}
             </p>
           </div>
         </div>
@@ -100,13 +102,13 @@ export default function SettingsPage() {
             <div className="flex items-center gap-2">
               <User className="w-5 h-5 text-[#245C3A]" />
               <h2 className="text-base font-black text-[#26332B]">
-                Farmer Profile & Land Details
+                {t('settings.profileSettings', 'Farmer Profile & Land Details')}
               </h2>
             </div>
             {saveSuccess && (
               <span className="text-xs font-bold text-[#245C3A] bg-[#E8F0E7] px-3 py-1 rounded-full flex items-center gap-1.5 animate-in fade-in">
                 <Check className="w-3.5 h-3.5" />
-                Profile Updated Successfully
+                {t('settings.savedSuccess', 'Profile Updated Successfully')}
               </span>
             )}
           </div>
@@ -194,7 +196,7 @@ export default function SettingsPage() {
 
               <div className="sm:col-span-2">
                 <label className="block text-[#5C6E63] font-bold uppercase tracking-wider mb-1.5">
-                  Preferred Platform Language
+                  {t('settings.languageSettings', 'Preferred Platform Language')}
                 </label>
                 <select
                   value={formData.preferred_language}
@@ -205,6 +207,9 @@ export default function SettingsPage() {
                     <option key={l.code} value={l.code}>{l.name}</option>
                   ))}
                 </select>
+                <p className="text-[11px] text-[#5C6E63] mt-1">
+                  {t('settings.languageHelp', 'Select your preferred regional language across the portal and voice assistant.')}
+                </p>
               </div>
 
             </div>
@@ -216,7 +221,7 @@ export default function SettingsPage() {
                 className="px-6 py-2.5 rounded-xl bg-[#245C3A] hover:bg-[#1B462C] text-white font-bold text-xs flex items-center gap-2 shadow-xs transition active:scale-98 cursor-pointer disabled:opacity-50"
               >
                 <Save className="w-4 h-4" />
-                <span>{isSaving ? "Saving..." : "Save Profile Changes"}</span>
+                <span>{isSaving ? t('common.loading', 'Saving...') : t('settings.saveChanges', 'Save Profile Changes')}</span>
               </button>
             </div>
           </form>

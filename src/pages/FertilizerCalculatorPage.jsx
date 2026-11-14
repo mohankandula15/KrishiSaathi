@@ -18,9 +18,11 @@ import {
 } from 'lucide-react';
 import { useSoil } from '../context/SoilContext';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
 
 export default function FertilizerCalculatorPage() {
+  const { t } = useTranslation();
   const { activeReport } = useSoil();
   const { user } = useAuth();
 
@@ -195,12 +197,11 @@ export default function FertilizerCalculatorPage() {
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-black text-[#26332B] tracking-tight">
-              Intelligent Fertilizer Recommendation Engine
+              {t('fertilizer.title', 'Intelligent Fertilizer Recommendation Engine')}
             </h1>
 
             <p className="text-xs text-[#5C6E63] max-w-2xl leading-relaxed">
-              Computes scientifically validated fertilizer quantities based on your actual soil test parameters. 
-              Deducts starter Nitrogen from DAP to eliminate duplicate chemical application and protect soil ecology.
+              {t('fertilizer.subtitle', 'Scientific soil test crop response (STCR) prescriptions tailored to your acreage and soil card')}
             </p>
           </div>
 
@@ -211,7 +212,7 @@ export default function FertilizerCalculatorPage() {
               className="px-4 py-2.5 rounded-xl border border-[#E2EBE2] bg-white hover:bg-[#F2F7F1] text-[#26332B] font-bold text-xs flex items-center gap-2 transition cursor-pointer shadow-2xs"
             >
               <Printer className="w-4 h-4 text-[#5C6E63]" />
-              <span>Print Schedule</span>
+              <span>{t('common.print', 'Print Schedule')}</span>
             </button>
           </div>
 
@@ -225,7 +226,7 @@ export default function FertilizerCalculatorPage() {
             <div className="flex items-center justify-between">
               <div>
                 <label className="text-xs font-bold uppercase tracking-wider text-[#5C6E63] block">
-                  Field Area Size
+                  {t('fertilizer.fieldArea', 'Field Acreage')}
                 </label>
                 <span className="text-[11px] text-[#5C6E63]">Adjust land area to scale exact bag prescriptions</span>
               </div>
@@ -300,7 +301,7 @@ export default function FertilizerCalculatorPage() {
           <div className="lg:col-span-5 space-y-4 p-5 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2]">
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-[#5C6E63] block">
-                Target Crop Cultivated
+                {t('fertilizer.selectCrop', 'Target Crop Cultivated')}
               </label>
               <span className="text-[11px] text-[#5C6E63]">Select crop to calibrate specific N-P-K nutrient uptake</span>
             </div>
@@ -604,7 +605,7 @@ export default function FertilizerCalculatorPage() {
         {/* Estimated Expense */}
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E2EBE2] shadow-xs space-y-3">
           <span className="text-xs font-black uppercase tracking-wider text-[#5C6E63]">
-            Estimated Input Expenditure
+            {t('fertilizer.estimatedCost', 'Estimated Input Expenditure')}
           </span>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-black text-[#26332B]">
@@ -620,7 +621,7 @@ export default function FertilizerCalculatorPage() {
         {/* Cost Savings */}
         <div className="bg-[#E8F0E7] rounded-3xl p-6 sm:p-8 border border-[#D4E3D3] shadow-xs space-y-3">
           <span className="text-xs font-black uppercase tracking-wider text-[#245C3A]">
-            Financial Savings from Soil Testing
+            {t('fertilizer.savingsTip', 'Financial Savings from Soil Testing')}
           </span>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-black text-[#245C3A]">
@@ -639,9 +640,9 @@ export default function FertilizerCalculatorPage() {
       <div className="p-5 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-3">
         <AlertCircle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
         <div>
-          <strong className="font-bold text-sm block">Mandatory Agronomy Safety Guidelines:</strong>
+          <strong className="font-bold text-sm block">{t('fertilizer.precautions', 'Mandatory Agronomy Safety Guidelines')}:</strong>
           <ul className="mt-1.5 list-disc list-inside space-y-1 text-[#5C6E63]">
-            <li><strong className="text-amber-900">Do NOT mix DAP with Zinc Sulphate:</strong> Mixing causes chemical lockup, forming insoluble Zinc Phosphate which plant roots cannot absorb.</li>
+            <li><strong className="text-amber-900">{t('fertilizer.zincDapWarning', 'CRITICAL: Do NOT mix Zinc Sulphate directly with DAP.')}</strong></li>
             <li><strong className="text-amber-900">Soil Moisture:</strong> Never apply chemical fertilizers to completely dry soil or during peak afternoon heat; always follow with light irrigation.</li>
             <li><strong className="text-amber-900">Seed Separation:</strong> Drill fertilizers at least 5 cm below or to the side of the seed furrow to avoid seedling chemical burn.</li>
           </ul>

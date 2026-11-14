@@ -15,8 +15,10 @@ import {
 } from 'lucide-react';
 import { useSoil } from '../context/SoilContext';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 export default function LandingPage() {
+  const { t } = useTranslation();
   const { setIsUploadModalOpen } = useSoil();
   const { user } = useAuth();
 
@@ -37,20 +39,18 @@ export default function LandingPage() {
               
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-700/80 border border-emerald-500/40 text-emerald-200 text-xs sm:text-sm font-semibold backdrop-blur-xs">
                 <Sparkles className="w-4 h-4 text-amber-300" />
-                <span>AI-Powered Soil Health Intelligence & Advisory</span>
+                <span>{t('landing.heroTag', 'AI-Powered Soil Health Intelligence & Advisory')}</span>
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-tight">
-                Understand Your Soil. <br className="hidden sm:inline" />
+                {t('landing.heroTitle', 'Understand Your Soil.')} <br className="hidden sm:inline" />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-green-200 to-amber-300">
-                  Grow Better. Earn More.
+                  {t('landing.heroTitleHighlight', 'Grow Better. Earn More.')}
                 </span>
               </h1>
 
               <p className="text-base sm:text-lg text-emerald-100/90 leading-relaxed max-w-2xl mx-auto lg:mx-0">
-                KrishiSaathi empowers farmers to unlock the true potential of their land. 
-                Upload your Soil Health Card to receive instant NPK nutrient diagnosis, balanced fertilizer dosages per acre, 
-                and high-profit crop recommendations with our interactive AI assistant.
+                {t('landing.heroSubtitle', 'KrishiSaathi empowers farmers to unlock the true potential of their land.')}
               </p>
 
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 justify-center lg:justify-start pt-2">
@@ -58,7 +58,7 @@ export default function LandingPage() {
                   to={user ? "/dashboard" : "/register"}
                   className="px-8 py-4 rounded-2xl bg-amber-400 hover:bg-amber-500 text-stone-950 font-black text-lg shadow-xl shadow-amber-400/25 flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-95 group"
                 >
-                  <span>Get Started</span>
+                  <span>{t('landing.ctaDemo', 'Get Started')}</span>
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
 
@@ -68,7 +68,7 @@ export default function LandingPage() {
                   className="px-8 py-4 rounded-2xl bg-white/10 hover:bg-white/20 border-2 border-white/40 text-white font-bold text-lg backdrop-blur-xs flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-95"
                 >
                   <UploadCloud className="w-6 h-6 text-emerald-300" />
-                  <span>Upload Soil Report</span>
+                  <span>{t('landing.ctaUpload', 'Upload Soil Report')}</span>
                 </button>
               </div>
 

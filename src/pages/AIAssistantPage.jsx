@@ -22,14 +22,9 @@ export default function AIAssistantPage() {
   const { user, language, setLanguage } = useAuth();
   const { activeReport } = useSoil();
 
-  // Languages: Telugu (te), Hindi (hi), English (en)
-  const [selectedLang, setSelectedLang] = useState(() => {
-    return localStorage.getItem('krishisaathi_preferred_lang') || 
-           localStorage.getItem('krishisaathi_lang') || 
-           user?.preferred_language || 
-           language || 
-           'te';
-  });
+  // Language derived directly from AuthContext as the single source of truth
+  const currentLang = (language && ['te', 'hi', 'en'].includes(language)) ? language : 'en';
+
   const [autoSpeak, setAutoSpeak] = useState(true);
   const [inputMessage, setInputMessage] = useState('');
   const [isListening, setIsListening] = useState(false);
@@ -76,8 +71,7 @@ export default function AIAssistantPage() {
   }, [activeReport]);
 
   // Language Change Handler with persistent profile sync
-  const handleLanguageChange = async (langCode) => {
-    setSelectedLang(langCode);
+  const handleLanguageChange = (langCode) => {
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
@@ -90,22 +84,11 @@ export default function AIAssistantPage() {
     setMicError('');
 
     if (setLanguage) setLanguage(langCode);
-    localStorage.setItem('krishisaathi_preferred_lang', langCode);
-    localStorage.setItem('krishisaathi_lang', langCode);
-
-    try {
-      const token = localStorage.getItem('krishisaathi_token');
-      if (token && api.farmers.updateProfile) {
-        await api.farmers.updateProfile({ preferred_language: langCode });
-      }
-    } catch (e) {
-      console.warn("Could not sync language preference to profile:", e.message);
-    }
   };
 
   // Client-side language detector for typed/spoken input
   const detectInputLanguage = (text) => {
-    if (!text) return selectedLang;
+    if (!text) return currentLang;
     // 1. Telugu Unicode script
     if (/[\u0C00-\u0C7F]/.test(text)) return 'te';
     // 2. Devanagari Unicode script
@@ -116,7 +99,7 @@ export default function AIAssistantPage() {
     const hiPatterns = /\b(kya|kare|kaise|mera|meri|khet|mitti|khad|kam|jyada|batao|chahiye|fasal|dalo|kisan|ji|sthiti)\b/;
     if (tePatterns.test(lower)) return 'te';
     if (hiPatterns.test(lower)) return 'hi';
-    return selectedLang;
+    return currentLang;
   };
 
   // Initial welcome message per language
@@ -138,9 +121,9 @@ export default function AIAssistantPage() {
     {
       id: 1,
       sender: 'bot',
-      text: getWelcomeText('te'),
+      text: getWelcomeText(currentLang),
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      lang: 'te'
+      lang: currentLang
     }
   ]);
 
@@ -161,9 +144,9 @@ export default function AIAssistantPage() {
       const welcome = {
         id: 1,
         sender: 'bot',
-        text: getWelcomeText(selectedLang),
+        text: getWelcomeText(currentLang),
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        lang: selectedLang
+        lang: currentLang
       };
       if (!prev || prev.length === 0) {
         return [welcome];
@@ -172,7 +155,7 @@ export default function AIAssistantPage() {
       const rest = hasWelcome ? prev.slice(1) : prev;
       return [welcome, ...rest];
     });
-  }, [selectedLang, getWelcomeText]);
+  }, [currentLang, getWelcomeText]);
 
   // Load chat history from backend
   useEffect(() => {
@@ -226,7 +209,7 @@ export default function AIAssistantPage() {
   }, []);
 
   // Text-To-Speech (Speaker Button & Auto-Speak)
-  const speakText = async (text, langCode = selectedLang, messageId = null) => {
+  const speakText = async (text, langCode = currentLang, messageId = null) => {
     // 1. Support stop/toggle on the same message
     if (speakingMessageId && speakingMessageId === messageId) {
       if (currentAudioRef.current) {
@@ -263,7 +246,7 @@ export default function AIAssistantPage() {
       return;
     }
 
-    let targetLang = langCode || selectedLang || 'te';
+    let targetLang = langCode || currentLang || 'en';
     if (/[\u0C00-\u0C7F]/.test(cleanText)) {
       targetLang = 'te';
     } else if (/[\u0900-\u097F]/.test(cleanText)) {
@@ -440,7 +423,7 @@ export default function AIAssistantPage() {
         stream.getTracks().forEach(track => track.stop());
       } catch (err) {
         console.warn("Microphone permission denied:", err);
-        setMicError(getMicErrorMessage('not-allowed', selectedLang));
+        setMicError(getMicErrorMessage('not-allowed', currentLang));
         setIsListening(false);
         return;
       }
@@ -451,9 +434,9 @@ export default function AIAssistantPage() {
       recognitionRef.current = recognition;
 
       // Set regional speech recognition language
-      if (selectedLang === 'te') {
+      if (currentLang === 'te') {
         recognition.lang = 'te-IN';
-      } else if (selectedLang === 'hi') {
+      } else if (currentLang === 'hi') {
         recognition.lang = 'hi-IN';
       } else {
         recognition.lang = 'en-IN';
@@ -487,7 +470,7 @@ export default function AIAssistantPage() {
 
           // Detect spoken language and auto-sync
           const detected = detectInputLanguage(finalTranscript);
-          if (detected !== selectedLang) {
+          if (detected !== currentLang) {
             handleLanguageChange(detected);
           }
 
@@ -502,7 +485,7 @@ export default function AIAssistantPage() {
         console.warn("Speech recognition error:", event.error);
         setIsListening(false);
         setInterimText('');
-        setMicError(getMicErrorMessage(event.error, selectedLang));
+        setMicError(getMicErrorMessage(event.error, currentLang));
       };
 
       recognition.onend = () => {
@@ -515,7 +498,7 @@ export default function AIAssistantPage() {
       console.warn("Speech recognition initialization failed:", err);
       setIsListening(false);
       setInterimText('');
-      setMicError(getMicErrorMessage(err.name || 'error', selectedLang));
+      setMicError(getMicErrorMessage(err.name || 'error', currentLang));
     }
   };
 
@@ -537,8 +520,8 @@ export default function AIAssistantPage() {
 
     // Detect language of the input query
     const detectedLang = explicitLang || detectInputLanguage(text);
-    if (detectedLang !== selectedLang) {
-      setSelectedLang(detectedLang);
+    if (detectedLang !== currentLang) {
+      if (setLanguage) setLanguage(detectedLang);
     }
 
     const userMsgId = Date.now();
@@ -702,9 +685,9 @@ export default function AIAssistantPage() {
       {
         id: 1,
         sender: 'bot',
-        text: getWelcomeText(selectedLang),
+        text: getWelcomeText(currentLang),
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        lang: selectedLang
+        lang: currentLang
       }
     ]);
   };
@@ -734,7 +717,7 @@ export default function AIAssistantPage() {
     ]
   };
 
-  const currentQuestions = QUICK_QUESTIONS[selectedLang] || QUICK_QUESTIONS.te;
+  const currentQuestions = QUICK_QUESTIONS[currentLang] || QUICK_QUESTIONS.en;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
@@ -815,14 +798,14 @@ export default function AIAssistantPage() {
                 type="button"
                 onClick={() => handleLanguageChange(lang.code)}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
-                  selectedLang === lang.code 
+                  currentLang === lang.code 
                     ? "bg-[#245C3A] text-white shadow-xs" 
                     : "bg-[#F8FAF7] hover:bg-[#E8F0E7] text-[#26332B] border border-[#E2EBE2]"
                 }`}
               >
                 <span>{lang.label}</span>
                 <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                  selectedLang === lang.code ? "bg-white/20 text-white" : "bg-emerald-100 text-[#245C3A]"
+                  currentLang === lang.code ? "bg-white/20 text-white" : "bg-emerald-100 text-[#245C3A]"
                 }`}>
                   {lang.tag}
                 </span>
@@ -899,7 +882,7 @@ export default function AIAssistantPage() {
                     {isBot && (
                       <button
                         type="button"
-                        onClick={() => speakText(msg.text, msg.lang || selectedLang, msg.id)}
+                        onClick={() => speakText(msg.text, msg.lang || currentLang, msg.id)}
                         className={`px-2 py-0.5 rounded-lg transition cursor-pointer flex items-center gap-1 ${
                           isThisSpeaking 
                             ? "bg-[#245C3A] text-white animate-pulse" 
@@ -936,9 +919,9 @@ export default function AIAssistantPage() {
                 <span className="w-2.5 h-2.5 rounded-full bg-[#245C3A] animate-ping"></span>
                 <span className="font-medium">
                   {loadingStatus || (
-                    selectedLang === 'te' 
+                    currentLang === 'te' 
                       ? "కృషిసాథి AI మీ నేల కార్డును విశ్లేషిస్తోంది... (Analyzing soil data...)"
-                      : (selectedLang === 'hi' 
+                      : (currentLang === 'hi' 
                           ? "कृषिशाथी AI आपकी मिट्टी के आंकड़ों का विश्लेषण कर रहा है..." 
                           : "KrishiSaathi AI is analyzing your soil test data...")
                   )}
@@ -962,7 +945,7 @@ export default function AIAssistantPage() {
         <div className="p-3 sm:px-6 bg-white border-t border-[#E2EBE2] overflow-x-auto whitespace-nowrap">
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#5C6E63] shrink-0">
-              💡 {selectedLang === 'te' ? 'సూచించిన ప్రశ్నలు:' : (selectedLang === 'hi' ? 'सुझाए गए सवाल:' : 'Quick Questions:')}
+              💡 {currentLang === 'te' ? 'సూచించిన ప్రశ్నలు:' : (currentLang === 'hi' ? 'सुझाए गए सवाल:' : 'Quick Questions:')}
             </span>
             {currentQuestions.map((q, idx) => (
               <button
@@ -1042,19 +1025,19 @@ export default function AIAssistantPage() {
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-black text-[#26332B] truncate">
                   {isListening 
-                    ? (selectedLang === 'te' ? "🔴 వింటున్నాను... మాట్లాడండి" : (selectedLang === 'hi' ? "🔴 सुन रहा हूँ... बोलिए" : "🔴 Listening... Speak clearly"))
-                    : (selectedLang === 'te' ? "మైక్ నొక్కి తెలుగులో మాట్లాడండి" : (selectedLang === 'hi' ? "माइक दबाकर हिंदी में बोलें" : "Tap mic to speak your question in English"))}
+                    ? (currentLang === 'te' ? "🔴 వింటున్నాను... మాట్లాడండి" : (currentLang === 'hi' ? "🔴 सुन रहा हूँ... बोलिए" : "🔴 Listening... Speak clearly"))
+                    : (currentLang === 'te' ? "మైక్ నొక్కి తెలుగులో మాట్లాడండి" : (currentLang === 'hi' ? "माइक दबाकर हिंदी में बोलें" : "Tap mic to speak your question in English"))}
                 </p>
                 <p className="text-[11px] text-[#5C6E63] truncate">
                   {isListening 
-                    ? (selectedLang === 'te' ? "పూర్తయ్యాక మైక్ మళ్లీ నొక్కండి" : "Tap mic again to finish") 
-                    : (selectedLang === 'te' ? "వాయిస్ రికగ్నిషన్ ఆటోమేటిక్‌గా సమాధానం ఇస్తుంది" : "Automatic speech recognition & voice answer")}
+                    ? (currentLang === 'te' ? "పూర్తయ్యాక మైక్ మళ్లీ నొక్కండి" : "Tap mic again to finish") 
+                    : (currentLang === 'te' ? "వాయిస్ రికగ్నిషన్ ఆటోమేటిక్‌గా సమాధానం ఇస్తుంది" : "Automatic speech recognition & voice answer")}
                 </p>
               </div>
             </div>
 
             <span className="text-[11px] font-bold text-[#245C3A] bg-white px-3 py-1 rounded-full border border-[#D4E3D3] self-start sm:self-auto shrink-0">
-              {selectedLang === 'te' ? "తెలుగు వాయిస్" : (selectedLang === 'hi' ? "हिंदी आवाज़" : "English Voice")}
+              {currentLang === 'te' ? "తెలుగు వాయిస్" : (currentLang === 'hi' ? "हिंदी आवाज़" : "English Voice")}
             </span>
           </div>
 
@@ -1071,9 +1054,9 @@ export default function AIAssistantPage() {
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               placeholder={
-                selectedLang === 'te' 
+                currentLang === 'te' 
                   ? "లేదా ఇక్కడ టైప్ చేయండి (ఉదా: నా నేలలో నత్రజని తక్కువగా ఉంది, ఏం చేయాలి?)..."
-                  : (selectedLang === 'hi' 
+                  : (currentLang === 'hi' 
                       ? "या यहाँ टाइप करें (उदा: यूरिया की कितनी मात्रा डालनी चाहिए?)..." 
                       : "Or type your farming query here...")
               }

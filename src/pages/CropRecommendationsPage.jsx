@@ -18,9 +18,11 @@ import {
 } from 'lucide-react';
 import { useSoil } from '../context/SoilContext';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
 
 export default function CropRecommendationsPage() {
+  const { t } = useTranslation();
   const { activeReport } = useSoil();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -104,20 +106,18 @@ export default function CropRecommendationsPage() {
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-black text-[#26332B] tracking-tight">
-              Intelligent Regional Crop Suitability Recommender
+              {t('cropRec.title', 'Intelligent Regional Crop Suitability Recommender')}
             </h1>
 
             <p className="text-xs text-[#5C6E63] max-w-2xl leading-relaxed">
-              Analyzes your soil reaction (pH {activeReport?.ph?.value ?? 7.2}), available macronutrients, 
-              and texture ({activeReport?.soilType ?? "Alluvial Loam"}) to rank compatible crops. 
-              Prioritizes high-yielding Andhra Pradesh varieties with nationwide adaptability.
+              {t('cropRec.subtitle', 'Analyzes your soil reaction, available macronutrients, and texture to rank compatible crops.')}
             </p>
           </div>
 
           <div className="flex items-center gap-2 self-start lg:self-auto">
             <span className="text-xs font-bold text-[#245C3A] bg-[#E8F0E7] px-3.5 py-2 rounded-xl border border-[#D4E3D3] flex items-center gap-1.5">
               <Sprout className="w-4 h-4 text-[#245C3A]" />
-              <span>{crops.length} Suitable Crops Ranked</span>
+              <span>{crops.length} {t('cropRec.filters.all', 'Suitable Crops Ranked')}</span>
             </span>
           </div>
 
@@ -245,7 +245,7 @@ export default function CropRecommendationsPage() {
                 <div className="text-right shrink-0">
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-2xl bg-[#E8F0E7] text-[#245C3A] font-black text-sm border border-[#D4E3D3]">
                     <Sparkles className="w-4 h-4 text-[#245C3A]" />
-                    <span>{crop.suitability}% Match</span>
+                    <span>{crop.suitability}% {t('cropRec.matchScore', 'Match')}</span>
                   </div>
                 </div>
               </div>
@@ -253,12 +253,12 @@ export default function CropRecommendationsPage() {
               {/* Metrics Grid */}
               <div className="grid grid-cols-2 gap-3 py-4 text-xs">
                 <div className="p-3 rounded-xl bg-[#F8FAF7] border border-[#E2EBE2]">
-                  <span className="text-[#5C6E63] block text-[11px]">Potential Agronomic Yield</span>
+                  <span className="text-[#5C6E63] block text-[11px]">{t('cropRec.expectedYield', 'Potential Agronomic Yield')}</span>
                   <strong className="text-[#26332B] text-xs block mt-0.5">{crop.potential_yield || crop.expectedYield}</strong>
                 </div>
 
                 <div className="p-3 rounded-xl bg-[#F8FAF7] border border-[#E2EBE2]">
-                  <span className="text-[#5C6E63] block text-[11px]">Indicative Gross Return</span>
+                  <span className="text-[#5C6E63] block text-[11px]">{t('cropRec.economicReturns', 'Indicative Gross Return')}</span>
                   <strong className="text-[#245C3A] text-xs block mt-0.5">{crop.indicative_return || crop.indicativeReturn || "Based on MSP"}</strong>
                 </div>
               </div>
@@ -282,10 +282,10 @@ export default function CropRecommendationsPage() {
               {/* Soil Suitability Rationale */}
               <div className="mt-4 p-3.5 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2] text-xs space-y-1.5">
                 <p className="text-[#26332B] leading-relaxed">
-                  <strong>Agronomic Suitability:</strong> {crop.soil_compatibility || "Well suited for active soil characteristics."}
+                  <strong>{t('cropRec.soilFitReason', 'Agronomic Suitability')}:</strong> {crop.soil_compatibility || "Well suited for active soil characteristics."}
                 </p>
                 <p className="text-[#5C6E63] pt-1">
-                  <strong>Water Schedule:</strong> {crop.water_requirement || crop.waterRequirement}
+                  <strong>{t('cropRec.waterNeed', 'Water Schedule')}:</strong> {crop.water_requirement || crop.waterRequirement}
                 </p>
               </div>
 
@@ -309,14 +309,14 @@ export default function CropRecommendationsPage() {
             {/* Bottom Actions */}
             <div className="pt-4 border-t border-[#E2EBE2] flex items-center justify-between gap-3">
               <span className="text-xs text-[#5C6E63] truncate">
-                Sowing: {crop.sowing_window || "Seasonal Window"}
+                {t('cropRec.season', 'Season')}: {crop.sowing_window || "Seasonal Window"}
               </span>
 
               <Link
                 to="/fertilizer-calculator"
                 className="px-4 py-2.5 rounded-xl bg-[#245C3A] hover:bg-[#1B462C] text-white font-bold text-xs flex items-center gap-1.5 transition shrink-0 shadow-2xs"
               >
-                <span>Calculate Fertilizer Plan</span>
+                <span>{t('cropRec.actionPlan', 'Calculate Fertilizer Plan')}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
@@ -340,7 +340,7 @@ export default function CropRecommendationsPage() {
           className="px-6 py-3 rounded-2xl bg-[#E8F0E7] hover:bg-[#D4E3D3] text-[#245C3A] font-bold text-xs flex items-center gap-2 transition shrink-0"
         >
           <Sprout className="w-4 h-4 text-[#245C3A]" />
-          <span>Ask Agronomy Advisor</span>
+          <span>{t('dashboard.actions.askAi', 'Ask AI Agronomist')}</span>
         </Link>
       </div>
 

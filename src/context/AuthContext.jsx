@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '../services/api';
+import i18n from '../i18n';
 
 const AuthContext = createContext();
 
@@ -30,13 +31,36 @@ export function AuthProvider({ children }) {
     return null;
   });
 
-  const [language, setLanguage] = useState(() => {
-    return localStorage.getItem('krishisaathi_preferred_lang') || localStorage.getItem('krishisaathi_lang') || 'en';
+  const [language, setLanguageState] = useState(() => {
+    const local = localStorage.getItem('krishisaathi_lang');
+    if (local && ['en', 'te', 'hi'].includes(local)) return local;
+    return 'en';
   });
 
   const [isLoading, setIsLoading] = useState(false);
   const [authStatus, setAuthStatus] = useState(null);
   const [authError, setAuthError] = useState(null);
+
+  // setLanguage: the single source of truth for language changes
+  const setLanguage = (newLang) => {
+    if (!newLang) return;
+    const targetLang = ['en', 'te', 'hi'].includes(newLang) ? newLang : newLang;
+    setLanguageState(targetLang);
+    localStorage.setItem('krishisaathi_lang', targetLang);
+    localStorage.setItem('krishisaathi_preferred_lang', targetLang);
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = targetLang;
+    }
+    i18n.changeLanguage(targetLang).catch(() => {});
+
+    // Sync to profile in background if user is authenticated
+    const token = localStorage.getItem('krishisaathi_token');
+    if (token && api.farmers && api.farmers.updateProfile) {
+      api.farmers.updateProfile({ preferred_language: targetLang }).catch(e => {
+        console.warn("Could not sync language preference to profile:", e.message);
+      });
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -47,9 +71,16 @@ export function AuthProvider({ children }) {
     }
   }, [user]);
 
+  // Keep i18n & HTML lang in sync with state
   useEffect(() => {
-    localStorage.setItem('krishisaathi_lang', language);
-    localStorage.setItem('krishisaathi_preferred_lang', language);
+    if (language) {
+      localStorage.setItem('krishisaathi_lang', language);
+      localStorage.setItem('krishisaathi_preferred_lang', language);
+      if (typeof document !== 'undefined') {
+        document.documentElement.lang = language;
+      }
+      i18n.changeLanguage(language).catch(() => {});
+    }
   }, [language]);
 
   // Check if token exists on mount and refresh profile from backend
@@ -60,7 +91,9 @@ export function AuthProvider({ children }) {
         .then(farmer => {
           if (farmer) {
             setUser(farmer);
-            if (farmer.preferred_language) {
+            // Do NOT overwrite a language already saved locally
+            const saved = localStorage.getItem('krishisaathi_lang');
+            if (!saved && farmer.preferred_language) {
               setLanguage(farmer.preferred_language);
             }
           }
@@ -79,7 +112,9 @@ export function AuthProvider({ children }) {
       const res = await api.auth.login(mobile, password);
       if (res && res.farmer) {
         setUser(res.farmer);
-        if (res.farmer.preferred_language) {
+        // Do NOT overwrite a language already saved locally
+        const saved = localStorage.getItem('krishisaathi_lang');
+        if (!saved && res.farmer.preferred_language) {
           setLanguage(res.farmer.preferred_language);
         }
         return res.farmer;
@@ -87,7 +122,10 @@ export function AuthProvider({ children }) {
       const me = await api.auth.getMe();
       if (me) {
         setUser(me);
-        if (me.preferred_language) setLanguage(me.preferred_language);
+        const saved = localStorage.getItem('krishisaathi_lang');
+        if (!saved && me.preferred_language) {
+          setLanguage(me.preferred_language);
+        }
         return me;
       }
     } catch (err) {
@@ -165,7 +203,10 @@ export function AuthProvider({ children }) {
         }
 
         setUser(farmerProfile);
-        setLanguage(farmerProfile.preferred_language || lang);
+        const saved = localStorage.getItem('krishisaathi_lang');
+        if (!saved && farmerProfile.preferred_language) {
+          setLanguage(farmerProfile.preferred_language);
+        }
         updateStatus(null);
         setAuthError(null);
         setIsLoading(false);
@@ -206,7 +247,8 @@ export function AuthProvider({ children }) {
       const res = await api.auth.register(payload);
       if (res && res.farmer) {
         setUser(res.farmer);
-        if (res.farmer.preferred_language) {
+        const saved = localStorage.getItem('krishisaathi_lang');
+        if (!saved && res.farmer.preferred_language) {
           setLanguage(res.farmer.preferred_language);
         }
         return res.farmer;
@@ -214,7 +256,10 @@ export function AuthProvider({ children }) {
       const me = await api.auth.getMe();
       if (me) {
         setUser(me);
-        if (me.preferred_language) setLanguage(me.preferred_language);
+        const saved = localStorage.getItem('krishisaathi_lang');
+        if (!saved && me.preferred_language) {
+          setLanguage(me.preferred_language);
+        }
         return me;
       }
     } catch (err) {

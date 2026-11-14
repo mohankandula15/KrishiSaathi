@@ -28,10 +28,18 @@ import {
   Legend 
 } from 'recharts';
 import { useSoil } from '../context/SoilContext';
+import { useTranslation } from 'react-i18next';
 import WhatsAppShareReport from '../components/WhatsAppShareReport';
 
 export default function SoilAnalysisPage() {
+  const { t } = useTranslation();
   const { reports, activeReport, setActiveReportId, setIsUploadModalOpen } = useSoil();
+
+  const getRatingText = (rating) => {
+    if (!rating) return '';
+    const key = rating.toLowerCase().replace(/[^a-z]/g, '');
+    return t(`ratings.${key}`, rating);
+  };
 
   // NPK comparison chart data
   const npkChartData = [
@@ -80,13 +88,13 @@ export default function SoilAnalysisPage() {
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-[#245C3A] bg-[#E8F0E7] px-3 py-1 rounded-full border border-[#D4E3D3]">
-                Soil Health Diagnosis
+                {t('soilAnalysis.diagnosisBadge', 'Soil Health Diagnosis')}
               </span>
               <span className="text-xs bg-[#F8FAF7] text-[#5C6E63] font-mono px-2.5 py-0.5 rounded-full border border-[#E2EBE2]">
-                Card ID: {activeReport?.id}
+                {t('common.card', 'Card')} ID: {activeReport?.id}
               </span>
               <span className="text-xs bg-emerald-50 text-[#245C3A] font-bold px-2.5 py-0.5 rounded-full border border-emerald-200">
-                Score: {activeReport?.healthScore || 74}/100
+                {t('common.score', 'Score')}: {activeReport?.healthScore || 74}/100
               </span>
             </div>
 
@@ -95,7 +103,7 @@ export default function SoilAnalysisPage() {
             </h1>
 
             <p className="text-xs text-[#5C6E63]">
-              Location: <strong>{activeReport?.location}</strong> • Tested: <strong>{activeReport?.sampleDate}</strong> • Laboratory: <strong>{activeReport?.labName}</strong>
+              {t('common.location', 'Location')}: <strong>{activeReport?.location}</strong> • {t('soilAnalysis.testedLabel', 'Tested')}: <strong>{activeReport?.sampleDate}</strong> • {t('soilAnalysis.labLabel', 'Laboratory')}: <strong>{activeReport?.labName}</strong>
             </p>
           </div>
 
@@ -119,7 +127,7 @@ export default function SoilAnalysisPage() {
               className="px-4 py-2.5 rounded-xl border border-[#E2EBE2] bg-white hover:bg-[#F2F7F1] text-[#26332B] font-bold text-xs flex items-center gap-2 transition cursor-pointer"
             >
               <Printer className="w-4 h-4 text-[#5C6E63]" />
-              <span>Print Report</span>
+              <span>{t('soilAnalysis.printReport', 'Print Report')}</span>
             </button>
 
             <button
@@ -128,7 +136,7 @@ export default function SoilAnalysisPage() {
               className="px-4 py-2.5 rounded-xl bg-[#245C3A] hover:bg-[#1B462C] text-white font-bold text-xs flex items-center gap-2 transition shadow-xs cursor-pointer"
             >
               <UploadCloud className="w-4 h-4 text-emerald-100" />
-              <span>Upload New Card</span>
+              <span>{t('soilAnalysis.uploadNewCard', 'Upload New Card')}</span>
             </button>
           </div>
 
@@ -141,7 +149,7 @@ export default function SoilAnalysisPage() {
               <ShieldCheck className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs font-bold text-[#5C6E63] uppercase tracking-wider">Overall Diagnostic Assessment</p>
+              <p className="text-xs font-bold text-[#5C6E63] uppercase tracking-wider">{t('soilAnalysis.overallAssessment', 'Overall Diagnostic Assessment')}</p>
               <p className="text-sm font-black text-[#245C3A]">{activeReport?.overallStatus || "Moderate Soil Fertility"}</p>
             </div>
           </div>
@@ -152,7 +160,7 @@ export default function SoilAnalysisPage() {
               className="px-3.5 py-2 rounded-xl bg-[#F8FAF7] hover:bg-[#E8F0E7] text-[#245C3A] text-xs font-bold transition flex items-center gap-1.5"
             >
               <Sprout className="w-4 h-4" />
-              <span>View Recommended Crops</span>
+              <span>{t('soilAnalysis.viewCrops', 'View Recommended Crops')}</span>
             </Link>
 
             <Link
@@ -160,7 +168,7 @@ export default function SoilAnalysisPage() {
               className="px-3.5 py-2 rounded-xl bg-[#E8F0E7] hover:bg-[#D4E3D3] text-[#245C3A] text-xs font-bold transition flex items-center gap-1.5"
             >
               <Calculator className="w-4 h-4" />
-              <span>Fertilizer Calculator</span>
+              <span>{t('soilAnalysis.fertilizerCalc', 'Fertilizer Calculator')}</span>
             </Link>
           </div>
         </div>
@@ -175,10 +183,10 @@ export default function SoilAnalysisPage() {
           <div>
             <h2 className="text-lg font-black text-[#26332B] flex items-center gap-2">
               <Activity className="w-5 h-5 text-[#245C3A]" />
-              <span>Primary Macronutrients (N - P - K)</span>
+              <span>{t('soilAnalysis.primaryMacronutrients', 'Primary Macronutrients (N - P - K)')}</span>
             </h2>
             <p className="text-xs text-[#5C6E63]">
-              Available nutrient concentrations in kg/hectare compared against ICAR soil fertility standards
+              {t('soilAnalysis.primaryMacroDesc', 'Available nutrient concentrations in kg/hectare compared against ICAR soil fertility standards')}
             </p>
           </div>
           <span className="text-xs font-bold text-[#245C3A] bg-[#E8F0E7] px-3 py-1 rounded-full self-start sm:self-auto">
@@ -190,16 +198,16 @@ export default function SoilAnalysisPage() {
         <div className="p-4 sm:p-6 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2]">
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-bold uppercase tracking-wider text-[#5C6E63]">
-              Nutrient Level Comparison (Current vs ICAR Benchmark)
+              {t('soilAnalysis.primaryMacronutrients', 'Nutrient Level Comparison (Current vs ICAR Benchmark)')}
             </span>
             <div className="flex items-center gap-4 text-xs">
               <span className="flex items-center gap-1.5 text-[#26332B] font-bold">
                 <span className="w-3 h-3 rounded-sm bg-[#245C3A]"></span>
-                Current Soil Level
+                {t('soilAnalysis.currentSoilLevel', 'Current Soil Level')}
               </span>
               <span className="flex items-center gap-1.5 text-[#5C6E63] font-medium">
                 <span className="w-3 h-3 rounded-sm bg-[#D4E3D3]"></span>
-                ICAR Benchmark
+                {t('soilAnalysis.icarBenchmark', 'ICAR Benchmark')}
               </span>
             </div>
           </div>
@@ -219,7 +227,7 @@ export default function SoilAnalysisPage() {
                     fontSize: '12px',
                     color: '#26332B'
                   }}
-                  formatter={(val, name) => [`${val} kg/ha`, name === 'Current' ? 'Soil Value' : 'Standard Benchmark']}
+                  formatter={(val, name) => [`${val} kg/ha`, name === 'Current' ? t('soilAnalysis.currentSoilLevel', 'Current Soil Level') : t('soilAnalysis.icarBenchmark', 'ICAR Benchmark')]}
                 />
                 <Bar dataKey="Current" fill="#245C3A" radius={[8, 8, 0, 0]} maxBarSize={45} />
                 <Bar dataKey="Benchmark" fill="#D4E3D3" radius={[8, 8, 0, 0]} maxBarSize={45} />
@@ -235,10 +243,10 @@ export default function SoilAnalysisPage() {
           <div className="p-5 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2] space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-black uppercase tracking-wider text-[#5C6E63]">
-                Nitrogen (N)
+                {t('nutrients.nitrogen', 'Nitrogen (N)')}
               </span>
               <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200">
-                {activeReport?.nutrients?.nitrogen?.rating || "Low"}
+                {getRatingText(activeReport?.nutrients?.nitrogen?.rating || "Low")}
               </span>
             </div>
 
@@ -268,10 +276,10 @@ export default function SoilAnalysisPage() {
           <div className="p-5 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2] space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-black uppercase tracking-wider text-[#5C6E63]">
-                Phosphorus (P)
+                {t('nutrients.phosphorus', 'Phosphorus (P)')}
               </span>
               <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-emerald-50 text-[#245C3A] border border-emerald-200">
-                {activeReport?.nutrients?.phosphorus?.rating || "Medium"}
+                {getRatingText(activeReport?.nutrients?.phosphorus?.rating || "Medium")}
               </span>
             </div>
 
@@ -301,10 +309,10 @@ export default function SoilAnalysisPage() {
           <div className="p-5 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2] space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-black uppercase tracking-wider text-[#5C6E63]">
-                Potassium (K)
+                {t('nutrients.potassium', 'Potassium (K)')}
               </span>
               <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-900 border border-sky-200">
-                {activeReport?.nutrients?.potassium?.rating || "High"}
+                {getRatingText(activeReport?.nutrients?.potassium?.rating || "High")}
               </span>
             </div>
 
@@ -338,10 +346,10 @@ export default function SoilAnalysisPage() {
         <div className="pb-4 border-b border-[#E2EBE2]">
           <h2 className="text-lg font-black text-[#26332B] flex items-center gap-2">
             <Layers className="w-5 h-5 text-[#245C3A]" />
-            <span>Soil Chemical & Physical Parameters</span>
+            <span>{t('soilAnalysis.soilReaction', 'Soil Chemical & Physical Parameters')}</span>
           </h2>
           <p className="text-xs text-[#5C6E63]">
-            Key indicators that govern soil nutrient availability, root growth, and microbial fertility
+            {t('soilAnalysis.soilReactionDesc', 'Key indicators that govern soil nutrient availability, root growth, and microbial fertility')}
           </p>
         </div>
 
@@ -350,9 +358,9 @@ export default function SoilAnalysisPage() {
           {/* Soil pH Card with Visual Scale */}
           <div className="p-6 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2] space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase tracking-wider text-[#5C6E63]">Soil pH Scale</span>
+              <span className="text-xs font-black uppercase tracking-wider text-[#5C6E63]">{t('nutrients.ph', 'Soil pH Scale')}</span>
               <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-emerald-50 text-[#245C3A] border border-emerald-200">
-                {activeReport?.ph?.rating || "Neutral"}
+                {getRatingText(activeReport?.ph?.rating || "Neutral")}
               </span>
             </div>
 
@@ -387,9 +395,9 @@ export default function SoilAnalysisPage() {
           {/* Organic Carbon Card */}
           <div className="p-6 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2] space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase tracking-wider text-[#5C6E63]">Organic Carbon (OC)</span>
+              <span className="text-xs font-black uppercase tracking-wider text-[#5C6E63]">{t('nutrients.organicCarbon', 'Organic Carbon (OC)')}</span>
               <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200">
-                {activeReport?.organicCarbon?.rating || "Low"}
+                {getRatingText(activeReport?.organicCarbon?.rating || "Low")}
               </span>
             </div>
 
@@ -423,9 +431,9 @@ export default function SoilAnalysisPage() {
           {/* Electrical Conductivity (EC) Card */}
           <div className="p-6 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2] space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase tracking-wider text-[#5C6E63]">Electrical Conductivity</span>
+              <span className="text-xs font-black uppercase tracking-wider text-[#5C6E63]">{t('nutrients.ec', 'Electrical Conductivity')}</span>
               <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-emerald-50 text-[#245C3A] border border-emerald-200">
-                {activeReport?.ec?.rating || "Normal"}
+                {getRatingText(activeReport?.ec?.rating || "Normal")}
               </span>
             </div>
 
@@ -464,10 +472,10 @@ export default function SoilAnalysisPage() {
           <div>
             <h2 className="text-lg font-black text-[#26332B] flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-[#245C3A]" />
-              <span>Secondary Nutrients & Micronutrients</span>
+              <span>{t('soilAnalysis.micronutrients', 'Secondary Nutrients & Micronutrients')}</span>
             </h2>
             <p className="text-xs text-[#5C6E63]">
-              Trace minerals critical for chlorophyll synthesis, disease resistance, and enzyme activation
+              {t('soilAnalysis.micronutrientsDesc', 'Trace minerals critical for chlorophyll synthesis, disease resistance, and enzyme activation')}
             </p>
           </div>
           <span className="text-xs font-bold text-[#245C3A] bg-[#E8F0E7] px-3 py-1 rounded-full self-start sm:self-auto">
@@ -480,9 +488,9 @@ export default function SoilAnalysisPage() {
           {/* Zinc (Deficient Alert) */}
           <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-2">
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-[#5C6E63]">Zinc (Zn)</span>
+              <span className="text-xs font-bold text-[#5C6E63]">{t('nutrients.zinc', 'Zinc (Zn)')}</span>
               <span className="text-[10px] font-black bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded">
-                Deficient
+                {getRatingText('Deficient')}
               </span>
             </div>
             <p className="text-xl font-black text-amber-950">0.45 <span className="text-[11px] font-normal text-[#5C6E63]">ppm</span></p>
@@ -492,9 +500,9 @@ export default function SoilAnalysisPage() {
           {/* Sulphur */}
           <div className="p-4 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2] space-y-2">
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-[#5C6E63]">Sulphur (S)</span>
+              <span className="text-xs font-bold text-[#5C6E63]">{t('nutrients.sulphur', 'Sulphur (S)')}</span>
               <span className="text-[10px] font-black bg-[#E8F0E7] text-[#245C3A] px-1.5 py-0.5 rounded">
-                Medium
+                {getRatingText('Medium')}
               </span>
             </div>
             <p className="text-xl font-black text-[#26332B]">12.5 <span className="text-[11px] font-normal text-[#5C6E63]">ppm</span></p>
@@ -504,9 +512,9 @@ export default function SoilAnalysisPage() {
           {/* Iron */}
           <div className="p-4 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2] space-y-2">
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-[#5C6E63]">Iron (Fe)</span>
+              <span className="text-xs font-bold text-[#5C6E63]">{t('nutrients.iron', 'Iron (Fe)')}</span>
               <span className="text-[10px] font-black bg-[#E8F0E7] text-[#245C3A] px-1.5 py-0.5 rounded">
-                Sufficient
+                {getRatingText('Sufficient')}
               </span>
             </div>
             <p className="text-xl font-black text-[#26332B]">5.4 <span className="text-[11px] font-normal text-[#5C6E63]">ppm</span></p>
@@ -516,9 +524,9 @@ export default function SoilAnalysisPage() {
           {/* Copper */}
           <div className="p-4 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2] space-y-2">
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-[#5C6E63]">Copper (Cu)</span>
+              <span className="text-xs font-bold text-[#5C6E63]">{t('nutrients.copper', 'Copper (Cu)')}</span>
               <span className="text-[10px] font-black bg-[#E8F0E7] text-[#245C3A] px-1.5 py-0.5 rounded">
-                Sufficient
+                {getRatingText('Sufficient')}
               </span>
             </div>
             <p className="text-xl font-black text-[#26332B]">0.78 <span className="text-[11px] font-normal text-[#5C6E63]">ppm</span></p>
@@ -528,9 +536,9 @@ export default function SoilAnalysisPage() {
           {/* Manganese */}
           <div className="p-4 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2] space-y-2">
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-[#5C6E63]">Manganese</span>
+              <span className="text-xs font-bold text-[#5C6E63]">{t('nutrients.manganese', 'Manganese (Mn)')}</span>
               <span className="text-[10px] font-black bg-[#E8F0E7] text-[#245C3A] px-1.5 py-0.5 rounded">
-                Sufficient
+                {getRatingText('Sufficient')}
               </span>
             </div>
             <p className="text-xl font-black text-[#26332B]">3.8 <span className="text-[11px] font-normal text-[#5C6E63]">ppm</span></p>
@@ -540,9 +548,9 @@ export default function SoilAnalysisPage() {
           {/* Boron */}
           <div className="p-4 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2] space-y-2">
             <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-[#5C6E63]">Boron (B)</span>
+              <span className="text-xs font-bold text-[#5C6E63]">{t('nutrients.boron', 'Boron (B)')}</span>
               <span className="text-[10px] font-black bg-[#E8F0E7] text-[#245C3A] px-1.5 py-0.5 rounded">
-                Medium
+                {getRatingText('Medium')}
               </span>
             </div>
             <p className="text-xl font-black text-[#26332B]">0.52 <span className="text-[11px] font-normal text-[#5C6E63]">ppm</span></p>
@@ -564,7 +572,7 @@ export default function SoilAnalysisPage() {
             to="/fertilizer-calculator"
             className="px-4 py-2 rounded-xl bg-[#245C3A] text-white font-bold text-xs hover:bg-[#1B462C] transition shrink-0 text-center"
           >
-            Calculate Micro Dosage
+            {t('fertilizer.calculateBtn', 'Calculate Micro Dosage')}
           </Link>
         </div>
       </div>
@@ -573,10 +581,10 @@ export default function SoilAnalysisPage() {
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E2EBE2] shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
           <h3 className="font-black text-base text-[#26332B]">
-            Ready to apply recommendations?
+            {t('soilAnalysis.nextSteps', 'Ready to apply recommendations?')}
           </h3>
           <p className="text-xs text-[#5C6E63]">
-            Proceed to the interactive Fertilizer Calculator or explore recommended crop varieties.
+            {t('soilAnalysis.nextStepsDesc', 'Proceed to the interactive Fertilizer Calculator or explore recommended crop varieties.')}
           </p>
         </div>
 
@@ -585,13 +593,13 @@ export default function SoilAnalysisPage() {
             to="/crop-recommendations"
             className="flex-1 sm:flex-none px-5 py-3 rounded-xl bg-[#F8FAF7] hover:bg-[#E8F0E7] text-[#245C3A] border border-[#E2EBE2] font-bold text-xs text-center transition"
           >
-            Recommended Crops
+            {t('soilAnalysis.viewCrops', 'Recommended Crops')}
           </Link>
           <Link
             to="/fertilizer-calculator"
             className="flex-1 sm:flex-none px-6 py-3 rounded-xl bg-[#245C3A] hover:bg-[#1B462C] text-white font-bold text-xs flex items-center justify-center gap-2 transition"
           >
-            <span>Fertilizer Calculator</span>
+            <span>{t('soilAnalysis.fertilizerCalc', 'Fertilizer Calculator')}</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>

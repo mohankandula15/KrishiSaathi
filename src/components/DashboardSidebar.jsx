@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { 
   LayoutDashboard, 
   FlaskConical, 
@@ -11,7 +12,6 @@ import {
   UploadCloud, 
   LogOut, 
   X,
-  FileText,
   ChevronRight,
   ShieldCheck
 } from 'lucide-react';
@@ -19,6 +19,7 @@ import { useAuth } from '../context/AuthContext';
 import { useSoil } from '../context/SoilContext';
 
 export default function DashboardSidebar({ mobileOpen, setMobileOpen }) {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const { activeReport, setIsUploadModalOpen } = useSoil();
   const navigate = useNavigate();
@@ -28,13 +29,13 @@ export default function DashboardSidebar({ mobileOpen, setMobileOpen }) {
   const farmLocation = `${user?.village || "Kila Raipur"}, ${user?.district || "Ludhiana"}`;
 
   const navItems = [
-    { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-    { name: "Soil Analysis", path: "/soil-analysis", icon: FlaskConical },
-    { name: "Crop Recommendations", path: "/crop-recommendations", icon: Sprout },
-    { name: "Fertilizer Calculator", path: "/fertilizer-calculator", icon: Calculator },
-    { name: "AI Voice Assistant", path: "/ai-assistant", icon: Bot, badge: "AI" },
-    { name: "My Farm", path: "/my-farm", icon: MapPin },
-    { name: "Settings", path: "/settings", icon: Settings },
+    { name: t("nav.dashboard", "Dashboard"), path: "/dashboard", icon: LayoutDashboard },
+    { name: t("nav.soilAnalysis", "Soil Analysis"), path: "/soil-analysis", icon: FlaskConical },
+    { name: t("nav.cropRecommendations", "Crop Recommendations"), path: "/crop-recommendations", icon: Sprout },
+    { name: t("nav.fertilizerCalculator", "Fertilizer Calculator"), path: "/fertilizer-calculator", icon: Calculator },
+    { name: t("nav.aiAssistant", "AI Voice Assistant"), path: "/ai-assistant", icon: Bot, badge: "AI" },
+    { name: t("nav.myFarm", "My Farm"), path: "/my-farm", icon: MapPin },
+    { name: t("nav.settings", "Settings"), path: "/settings", icon: Settings },
   ];
 
   const handleLogout = () => {
@@ -61,7 +62,7 @@ export default function DashboardSidebar({ mobileOpen, setMobileOpen }) {
               </span>
             </div>
             <p className="text-[11px] font-medium text-[#5C6E63] tracking-tight">
-              Farm & Soil Intelligence
+              {t("common.appTagline", "Farm & Soil Intelligence")}
             </p>
           </div>
         </NavLink>
@@ -81,7 +82,7 @@ export default function DashboardSidebar({ mobileOpen, setMobileOpen }) {
       {/* Main Navigation Links */}
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-1.5">
         <div className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-[#5C6E63]">
-          Platform Navigation
+          {t("header.platformNav", "Platform Navigation")}
         </div>
 
         {navItems.map((item) => {
@@ -115,7 +116,7 @@ export default function DashboardSidebar({ mobileOpen, setMobileOpen }) {
         {/* Active Soil Health Card Widget in Sidebar */}
         <div className="mt-6 pt-6 border-t border-[#E2EBE2]">
           <div className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-[#5C6E63] flex items-center justify-between">
-            <span>Active Soil Card</span>
+            <span>{t("dashboard.activeCard", "Active Soil Card")}</span>
             <ShieldCheck className="w-3.5 h-3.5 text-[#245C3A]" />
           </div>
 
@@ -125,7 +126,7 @@ export default function DashboardSidebar({ mobileOpen, setMobileOpen }) {
                 {activeReport?.id || "SHC-Active"}
               </span>
               <span className="text-[10px] font-bold bg-[#E8F0E7] text-[#245C3A] px-2 py-0.5 rounded-full">
-                {activeReport?.healthScore || 74}/100 Score
+                {activeReport?.healthScore || 74}/100 {t("common.score", "Score")}
               </span>
             </div>
             <p className="text-[11px] text-[#5C6E63] truncate mb-2.5">
@@ -136,7 +137,7 @@ export default function DashboardSidebar({ mobileOpen, setMobileOpen }) {
               onClick={() => setMobileOpen(false)}
               className="text-xs font-bold text-[#245C3A] hover:underline flex items-center gap-1"
             >
-              <span>View Full Diagnosis</span>
+              <span>{t("common.viewDetails", "View Full Diagnosis")}</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </NavLink>
           </div>
@@ -153,7 +154,7 @@ export default function DashboardSidebar({ mobileOpen, setMobileOpen }) {
             className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-[#245C3A] hover:bg-[#1B462C] text-white text-xs font-bold shadow-xs hover:shadow-md transition active:scale-98 cursor-pointer"
           >
             <UploadCloud className="w-4 h-4 text-emerald-100" />
-            <span>Upload Soil Report</span>
+            <span>{t("header.uploadReport", "Upload Soil Report")}</span>
           </button>
         </div>
       </div>
@@ -178,7 +179,7 @@ export default function DashboardSidebar({ mobileOpen, setMobileOpen }) {
           <button
             type="button"
             onClick={handleLogout}
-            title="Log out"
+            title={t("nav.logout", "Log out")}
             className="p-2 rounded-xl text-[#5C6E63] hover:text-red-700 hover:bg-red-50 transition cursor-pointer"
             aria-label="Log Out"
           >

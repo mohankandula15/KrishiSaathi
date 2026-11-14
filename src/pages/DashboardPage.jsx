@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { 
   Sprout, 
   UploadCloud, 
@@ -23,6 +24,7 @@ import { useAuth } from '../context/AuthContext';
 import { useSoil } from '../context/SoilContext';
 
 export default function DashboardPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { reports, activeReport, setActiveReportId, setIsUploadModalOpen } = useSoil();
   const navigate = useNavigate();
@@ -48,7 +50,7 @@ export default function DashboardPage() {
       case 'low':
       case 'deficient':
         return {
-          label: "Low",
+          label: t("ratings.low", "Low"),
           pillClass: "bg-amber-50 text-amber-900 border-amber-200",
           dotClass: "bg-amber-600"
         };
@@ -57,20 +59,20 @@ export default function DashboardPage() {
       case 'normal':
       case 'sufficient':
         return {
-          label: "Optimal",
+          label: t("ratings.optimal", "Optimal"),
           pillClass: "bg-emerald-50 text-[#245C3A] border-emerald-200",
           dotClass: "bg-[#245C3A]"
         };
       case 'high':
       case 'rich':
         return {
-          label: "High",
+          label: t("ratings.high", "High"),
           pillClass: "bg-sky-50 text-sky-900 border-sky-200",
           dotClass: "bg-sky-600"
         };
       default:
         return {
-          label: rating || "Normal",
+          label: rating || t("ratings.normal", "Normal"),
           pillClass: "bg-stone-50 text-stone-800 border-stone-200",
           dotClass: "bg-stone-500"
         };
@@ -87,11 +89,11 @@ export default function DashboardPage() {
           <div className="space-y-2.5">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8F0E7] text-[#245C3A] text-xs font-bold border border-[#D4E3D3]">
               <span className="w-2 h-2 rounded-full bg-[#245C3A] animate-pulse"></span>
-              <span>Farm Management Dashboard</span>
+              <span>{t("dashboard.fieldOverview", "Farm Management Dashboard")}</span>
             </div>
             
             <h1 className="text-2xl sm:text-3xl font-black text-[#26332B] tracking-tight">
-              Welcome back, {farmerName} 👋
+              {t("dashboard.welcomeBack", "Welcome back")}, {farmerName} 👋
             </h1>
             
             <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-[#5C6E63] font-medium">
@@ -114,7 +116,7 @@ export default function DashboardPage() {
               className="px-5 py-3 rounded-2xl bg-[#245C3A] hover:bg-[#1B462C] text-white font-bold text-xs shadow-xs hover:shadow-md transition active:scale-98 flex items-center gap-2 cursor-pointer"
             >
               <UploadCloud className="w-4 h-4 text-emerald-100" />
-              <span>Upload Soil Report</span>
+              <span>{t("header.uploadReport", "Upload Soil Report")}</span>
             </button>
 
             <Link
@@ -122,7 +124,7 @@ export default function DashboardPage() {
               className="px-4 py-3 rounded-2xl bg-[#E8F0E7] hover:bg-[#D4E3D3] text-[#245C3A] font-bold text-xs transition flex items-center gap-2"
             >
               <Bot className="w-4 h-4 text-[#245C3A]" />
-              <span>Voice Advisor</span>
+              <span>{t("header.aiAdvisor", "Voice Advisor")}</span>
             </Link>
           </div>
 
@@ -149,8 +151,8 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3 p-3 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2]">
             <ShieldCheck className="w-6 h-6 text-[#245C3A] shrink-0" />
             <div>
-              <p className="font-bold text-[#26332B]">Active Card: {activeReport?.id}</p>
-              <p className="text-[#5C6E63] text-[11px]">Tested: {activeReport?.sampleDate} • {activeReport?.soilType}</p>
+              <p className="font-bold text-[#26332B]">{t("common.card", "Card")}: {activeReport?.id}</p>
+              <p className="text-[#5C6E63] text-[11px]">{t("common.date", "Tested")}: {activeReport?.sampleDate} • {activeReport?.soilType}</p>
             </div>
           </div>
         </div>
@@ -163,10 +165,10 @@ export default function DashboardPage() {
           <div className="space-y-3 max-w-xl">
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-[#245C3A] bg-[#E8F0E7] px-3 py-1 rounded-full border border-[#D4E3D3]">
-                Soil Health Overview
+                {t("soilAnalysis.diagnosisBadge", "Soil Health Overview")}
               </span>
               <span className="text-xs bg-[#F2F7F1] text-[#5C6E63] font-medium px-2.5 py-0.5 rounded-full border border-[#E2EBE2]">
-                Card: {activeReport?.id}
+                {t("common.card", "Card")}: {activeReport?.id}
               </span>
             </div>
 
@@ -222,10 +224,10 @@ export default function DashboardPage() {
 
             <div className="space-y-1">
               <p className="text-xs font-bold text-[#5C6E63] uppercase tracking-wider">
-                Soil Health Index
+                {t("dashboard.healthScore", "Soil Health Index")}
               </p>
               <p className="text-sm font-black text-[#245C3A]">
-                {healthScore >= 80 ? "Optimal Fertility" : healthScore >= 60 ? "Moderate Fertility" : "Low Fertility"}
+                {healthScore >= 80 ? t("ratings.optimal", "Optimal Fertility") : healthScore >= 60 ? t("ratings.medium", "Moderate Fertility") : t("ratings.low", "Low Fertility")}
               </p>
               <p className="text-[11px] text-[#5C6E63] max-w-[160px]">
                 Fertilizer calibration can elevate score to 88+.
@@ -240,7 +242,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-bold uppercase tracking-wider text-[#5C6E63]">
-                Key Nutrient Status Summary
+                {t("dashboard.nutrientStatus", "Key Nutrient Status Summary")}
               </h3>
               <p className="text-xs text-[#5C6E63]">
                 Summary of primary elements without technical clutter
@@ -257,7 +259,7 @@ export default function DashboardPage() {
             {/* 1. Nitrogen Status */}
             <div className="p-4 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2] flex flex-col justify-between space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#5C6E63]">Nitrogen (N)</span>
+                <span className="text-xs font-bold text-[#5C6E63]">{t("nutrients.nitrogen", "Nitrogen (N)")}</span>
                 {(() => {
                   const b = getStatusBadge(nitrogenRating);
                   return (
@@ -276,7 +278,7 @@ export default function DashboardPage() {
             {/* 2. Phosphorus Status */}
             <div className="p-4 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2] flex flex-col justify-between space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#5C6E63]">Phosphorus (P)</span>
+                <span className="text-xs font-bold text-[#5C6E63]">{t("nutrients.phosphorus", "Phosphorus (P)")}</span>
                 {(() => {
                   const b = getStatusBadge(phosphorusRating);
                   return (
@@ -295,7 +297,7 @@ export default function DashboardPage() {
             {/* 3. Potassium Status */}
             <div className="p-4 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2] flex flex-col justify-between space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#5C6E63]">Potassium (K)</span>
+                <span className="text-xs font-bold text-[#5C6E63]">{t("nutrients.potassium", "Potassium (K)")}</span>
                 {(() => {
                   const b = getStatusBadge(potassiumRating);
                   return (
@@ -314,10 +316,10 @@ export default function DashboardPage() {
             {/* 4. Overall Soil Health */}
             <div className="p-4 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2] flex flex-col justify-between space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#5C6E63]">Overall Soil Health</span>
+                <span className="text-xs font-bold text-[#5C6E63]">{t("dashboard.healthScore", "Overall Soil Health")}</span>
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#E8F0E7] text-[#245C3A] border border-[#D4E3D3]">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#245C3A]"></span>
-                  Moderate
+                  {t("ratings.medium", "Moderate")}
                 </span>
               </div>
               <p className="text-xs text-[#26332B] font-medium leading-relaxed">
@@ -337,7 +339,7 @@ export default function DashboardPage() {
               to="/soil-analysis"
               className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-[#245C3A] hover:bg-[#1B462C] text-white font-black text-xs flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition active:scale-98 whitespace-nowrap cursor-pointer"
             >
-              <span>View Detailed Soil Report</span>
+              <span>{t("soilAnalysis.diagnosisBadge", "View Detailed Soil Report")}</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -358,7 +360,7 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <h3 className="font-black text-base text-[#26332B]">
-                    Recommended Crops
+                    {t("cropRec.title", "Recommended Crops")}
                   </h3>
                   <p className="text-xs text-[#5C6E63]">
                     Matched to your pH ({activeReport?.ph?.value}) and soil type
@@ -370,7 +372,7 @@ export default function DashboardPage() {
                 to="/crop-recommendations"
                 className="text-xs font-bold text-[#245C3A] hover:underline flex items-center gap-1"
               >
-                <span>All Crops</span>
+                <span>{t("cropRec.filters.all", "All Crops")}</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </Link>
             </div>
@@ -385,11 +387,11 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-2">
                       <span className="font-black text-sm text-[#26332B] truncate">{crop.crop}</span>
                       <span className="text-[10px] font-bold bg-[#E8F0E7] text-[#245C3A] px-2 py-0.5 rounded-full shrink-0">
-                        {crop.suitability}% Match
+                        {crop.suitability}% {t("cropRec.matchScore", "Match")}
                       </span>
                     </div>
                     <p className="text-xs text-[#5C6E63] truncate">
-                      Expected Yield: <strong className="text-[#26332B]">{crop.expectedYield}</strong>
+                      {t("cropRec.expectedYield", "Expected Yield")}: <strong className="text-[#26332B]">{crop.expectedYield}</strong>
                     </p>
                   </div>
 
@@ -406,7 +408,7 @@ export default function DashboardPage() {
               to="/crop-recommendations"
               className="w-full py-2.5 rounded-xl bg-[#F8FAF7] hover:bg-[#E8F0E7] text-[#245C3A] font-bold text-xs flex items-center justify-center gap-2 transition"
             >
-              <span>Explore High-Yield Varietal Details</span>
+              <span>{t("dashboard.actions.viewCrops", "Explore High-Yield Varietal Details")}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -422,7 +424,7 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <h3 className="font-black text-base text-[#26332B]">
-                    Fertilizer Dosage Plan
+                    {t("fertilizer.prescriptionTitle", "Fertilizer Dosage Plan")}
                   </h3>
                   <p className="text-xs text-[#5C6E63]">
                     Per-acre calibrated doses based on soil deficiency
@@ -434,7 +436,7 @@ export default function DashboardPage() {
                 to="/fertilizer-calculator"
                 className="text-xs font-bold text-[#245C3A] hover:underline flex items-center gap-1"
               >
-                <span>Calculator</span>
+                <span>{t("nav.fertilizerCalculator", "Calculator")}</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </Link>
             </div>
@@ -451,7 +453,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="text-right shrink-0">
                     <span className="text-xs font-black text-[#245C3A] bg-[#E8F0E7] px-2.5 py-1 rounded-xl">
-                      {item.bagsPerAcre} bags/acre
+                      {item.bagsPerAcre} {t("common.units.bagsPerAcre", "bags/acre")}
                     </span>
                   </div>
                 </div>
@@ -461,7 +463,7 @@ export default function DashboardPage() {
 
           <div className="pt-5 mt-5 border-t border-[#E2EBE2]">
             <div className="p-3 bg-[#E8F0E7] rounded-xl border border-[#D4E3D3] flex items-center justify-between text-xs text-[#245C3A] mb-3">
-              <span className="font-bold">Estimated Cost Savings:</span>
+              <span className="font-bold">{t("fertilizer.savingsTip", "Estimated Cost Savings")}:</span>
               <span className="font-black text-sm">₹3,200 per acre</span>
             </div>
 
@@ -469,7 +471,7 @@ export default function DashboardPage() {
               to="/fertilizer-calculator"
               className="w-full py-2.5 rounded-xl bg-[#245C3A] hover:bg-[#1B462C] text-white font-bold text-xs flex items-center justify-center gap-2 transition"
             >
-              <span>Calculate Total Bags for {farmSize}</span>
+              <span>{t("fertilizer.calculateBtn", "Calculate Total Bags")}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -494,10 +496,10 @@ export default function DashboardPage() {
 
             <div>
               <h3 className="text-lg font-black text-white">
-                KrishiSaathi AI Agronomist
+                {t("assistant.title", "KrishiSaathi AI Agronomist")}
               </h3>
               <p className="text-xs text-emerald-100 mt-1 leading-relaxed">
-                Ask questions anytime about top dressing timing, zinc spray formulas, or pest diagnosis in your preferred language.
+                {t("assistant.subtitle", "Ask questions anytime about top dressing timing, zinc spray formulas, or pest diagnosis in your preferred language.")}
               </p>
             </div>
 
@@ -525,7 +527,7 @@ export default function DashboardPage() {
               className="w-full py-3 rounded-2xl bg-white text-[#245C3A] font-black text-xs flex items-center justify-center gap-2 hover:bg-emerald-50 transition active:scale-98 shadow-sm"
             >
               <Mic className="w-4 h-4 text-[#245C3A]" />
-              <span>Open Voice Assistant</span>
+              <span>{t("assistant.tapToSpeak", "Open Voice Assistant")}</span>
             </Link>
           </div>
         </div>
@@ -536,7 +538,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between pb-4 border-b border-[#E2EBE2] mb-5">
               <div>
                 <h3 className="font-black text-base text-[#26332B]">
-                  Saved Soil Health Cards
+                  {t("dashboard.activeCard", "Saved Soil Health Cards")}
                 </h3>
                 <p className="text-xs text-[#5C6E63]">
                   Switch active report to update recommendations across the dashboard

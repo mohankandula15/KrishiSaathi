@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 
 import {
   classifyNitrogen,
@@ -282,5 +283,48 @@ test('Plain Text Soil Report Generator for WhatsApp & FPO Advisory', async (t) =
     const text = formatSoilReportText(null, { lang: 'en' });
     assert.ok(text.length < 1500);
     assert.ok(text.includes('Ratings follow ICAR Soil Health Card standards.'));
+  });
+});
+
+test('i18n Translation Integrity & Units Preservation', async (t) => {
+  const en = JSON.parse(fs.readFileSync(new URL('../src/i18n/locales/en.json', import.meta.url), 'utf8'));
+  const te = JSON.parse(fs.readFileSync(new URL('../src/i18n/locales/te.json', import.meta.url), 'utf8'));
+  const hi = JSON.parse(fs.readFileSync(new URL('../src/i18n/locales/hi.json', import.meta.url), 'utf8'));
+
+  await t.test('All locales have identical top-level sections', () => {
+    const enKeys = Object.keys(en).sort();
+    const teKeys = Object.keys(te).sort();
+    const hiKeys = Object.keys(hi).sort();
+    assert.deepEqual(teKeys, enKeys);
+    assert.deepEqual(hiKeys, enKeys);
+  });
+
+  await t.test('Units are preserved identically across all languages', () => {
+    assert.equal(en.common.units.kgPerHa, 'kg/ha');
+    assert.equal(te.common.units.kgPerHa, 'kg/ha');
+    assert.equal(hi.common.units.kgPerHa, 'kg/ha');
+
+    assert.equal(en.common.units.ppm, 'ppm');
+    assert.equal(te.common.units.ppm, 'ppm');
+    assert.equal(hi.common.units.ppm, 'ppm');
+
+    assert.equal(en.common.units.percent, '%');
+    assert.equal(te.common.units.percent, '%');
+    assert.equal(hi.common.units.percent, '%');
+
+    assert.equal(en.common.units.dsPerM, 'dS/m');
+    assert.equal(te.common.units.dsPerM, 'dS/m');
+    assert.equal(hi.common.units.dsPerM, 'dS/m');
+  });
+
+  await t.test('Nutrient ratings are localized in Telugu and Hindi', () => {
+    assert.ok(te.ratings.low.includes('తక్కువ'));
+    assert.ok(hi.ratings.low.includes('कम'));
+    assert.ok(te.ratings.high.includes('ఎక్కువ'));
+    assert.ok(hi.ratings.high.includes('अधिक'));
+    assert.ok(te.ratings.deficient.includes('లోపం'));
+    assert.ok(hi.ratings.deficient.includes('कमी'));
+    assert.ok(te.ratings.sufficient.includes('సమృద్ధి'));
+    assert.ok(hi.ratings.sufficient.includes('पर्याप्त'));
   });
 });
