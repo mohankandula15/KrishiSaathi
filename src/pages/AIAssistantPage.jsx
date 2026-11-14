@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Bot, 
   Mic, 
@@ -10,11 +10,12 @@ import {
   User, 
   Trash2,
   ShieldCheck,
-  Radio
+  Radio,
+  AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSoil } from '../context/SoilContext';
-import { api } from '../services/api';
+import { api, API_BASE_URL } from '../services/api';
 
 export default function AIAssistantPage() {
   const { user, language, setLanguage } = useAuth();
@@ -34,7 +35,11 @@ export default function AIAssistantPage() {
   const [interimText, setInterimText] = useState('');
   const [speakingMessageId, setSpeakingMessageId] = useState(null);
   const [isSending, setIsSending] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState(null);
   const [availableVoices, setAvailableVoices] = useState([]);
+  const [voiceNotice, setVoiceNotice] = useState('');
+  const [micNotice, setMicError] = useState('');
+  const currentAudioRef = useRef(null);
 
   // Cache speech synthesis voices on mount and voice change
   useEffect(() => {
@@ -64,7 +69,13 @@ export default function AIAssistantPage() {
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+    }
     setSpeakingMessageId(null);
+    setVoiceNotice('');
+    setMicError('');
 
     if (setLanguage) setLanguage(langCode);
     localStorage.setItem('krishisaathi_preferred_lang', langCode);
@@ -97,7 +108,7 @@ export default function AIAssistantPage() {
   };
 
   // Initial welcome message per language
-  const getWelcomeText = (lang) => {
+  const getWelcomeText = useCallback((lang) => {
     const farmerName = user?.name || (lang === 'te' ? 'రైతు' : (lang === 'hi' ? 'किसान' : 'Farmer'));
     const reportTitle = activeReport?.title || activeReport?.id || "Soil Health Card";
     const nRating = activeReport?.nutrients?.nitrogen?.rating || "Low";
@@ -109,7 +120,7 @@ export default function AIAssistantPage() {
     } else {
       return `Hello ${farmerName}! 🌾 I am your KrishiSaathi AI agronomy voice assistant.\n\nI am connected to your active Soil Health Card (${reportTitle}):\n• pH: ${activeReport?.ph?.value ?? 7.2} (${activeReport?.ph?.rating ?? "Neutral"})\n• Nitrogen: ${activeReport?.nutrients?.nitrogen?.value ?? 185} kg/ha (Deficient)\n• Potash: ${activeReport?.nutrients?.potassium?.value ?? 295} kg/ha (High reserves)\n\nYou can speak or type questions about your soil fertility, customized urea splits, or crop recommendations. Tap the large microphone to talk!`;
     }
-  };
+  }, [user, activeReport]);
 
   const [messages, setMessages] = useState(() => [
     {
@@ -132,21 +143,24 @@ export default function AIAssistantPage() {
     scrollToBottom();
   }, [messages, interimText]);
 
-  // When language changes, update initial message if chat has only welcome message
+  // When language changes, immediately re-render the welcome message even if chat history exists
   useEffect(() => {
     setMessages(prev => {
-      if (prev.length <= 1) {
-        return [{
-          id: 1,
-          sender: 'bot',
-          text: getWelcomeText(selectedLang),
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          lang: selectedLang
-        }];
+      const welcome = {
+        id: 1,
+        sender: 'bot',
+        text: getWelcomeText(selectedLang),
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        lang: selectedLang
+      };
+      if (!prev || prev.length === 0) {
+        return [welcome];
       }
-      return prev;
+      const hasWelcome = prev[0]?.id === 1;
+      const rest = hasWelcome ? prev.slice(1) : prev;
+      return [welcome, ...rest];
     });
-  }, [selectedLang, activeReport]);
+  }, [selectedLang, getWelcomeText]);
 
   // Load chat history from backend
   useEffect(() => {
@@ -181,9 +195,13 @@ export default function AIAssistantPage() {
     }
   }, [user]);
 
-  // Clean up speech synthesis & recognition on unmount
+  // Clean up speech synthesis, audio & recognition on unmount
   useEffect(() => {
     return () => {
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current = null;
+      }
       if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
@@ -196,17 +214,30 @@ export default function AIAssistantPage() {
   }, []);
 
   // Text-To-Speech (Speaker Button & Auto-Speak)
-  const speakText = (text, langCode = selectedLang, messageId = null) => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-
+  const speakText = async (text, langCode = selectedLang, messageId = null) => {
+    // 1. Support stop/toggle on the same message
     if (speakingMessageId && speakingMessageId === messageId) {
-      window.speechSynthesis.cancel();
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current = null;
+      }
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
       setSpeakingMessageId(null);
       return;
     }
 
-    window.speechSynthesis.cancel();
+    // Stop any currently playing audio or speech
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+    }
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
     if (messageId) setSpeakingMessageId(messageId);
+    setVoiceNotice('');
 
     // Clean markdown characters, emojis, and symbols for natural spoken speech
     const cleanText = text
@@ -220,79 +251,155 @@ export default function AIAssistantPage() {
       return;
     }
 
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-
-    // Synchronize TTS language strictly with text script & language
-    let targetLang = 'en-IN';
-    let targetFamily = 'en';
-
-    if (/[\u0C00-\u0C7F]/.test(cleanText) || langCode === 'te') {
-      targetLang = 'te-IN';
-      targetFamily = 'te';
-    } else if (/[\u0900-\u097F]/.test(cleanText) || langCode === 'hi') {
-      targetLang = 'hi-IN';
-      targetFamily = 'hi';
-    } else {
-      targetLang = 'en-IN';
-      targetFamily = 'en';
+    let targetLang = langCode || selectedLang || 'te';
+    if (/[\u0C00-\u0C7F]/.test(cleanText)) {
+      targetLang = 'te';
+    } else if (/[\u0900-\u097F]/.test(cleanText)) {
+      targetLang = 'hi';
     }
 
-    utterance.lang = targetLang;
+    // 2. Call backend TTS endpoint with fetch (includes auth header)
+    try {
+      const token = localStorage.getItem('krishisaathi_token');
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const ttsUrl = `${API_BASE_URL}/chat/tts?text=${encodeURIComponent(cleanText.slice(0, 500))}&lang=${encodeURIComponent(targetLang)}`;
 
-    // Retrieve cached voices or live browser voices
-    const voices = availableVoices.length > 0 
-      ? availableVoices 
-      : window.speechSynthesis.getVoices();
+      const res = await fetch(ttsUrl, { headers });
+      if (!res.ok) {
+        throw new Error(`TTS server responded with ${res.status}`);
+      }
 
-    if (voices && voices.length > 0) {
-      let matchedVoice = null;
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const audio = new Audio(blobUrl);
+      currentAudioRef.current = audio;
 
-      if (targetFamily === 'te') {
-        // Priority for Telugu: exact te-IN -> contains telugu -> starts with te
-        matchedVoice = voices.find(v => {
-          const vLang = (v.lang || '').toLowerCase().replace('_', '-');
-          const vName = (v.name || '').toLowerCase();
+      audio.onended = () => {
+        URL.revokeObjectURL(blobUrl);
+        if (currentAudioRef.current === audio) {
+          currentAudioRef.current = null;
+        }
+        setSpeakingMessageId(null);
+      };
+
+      audio.onerror = () => {
+        URL.revokeObjectURL(blobUrl);
+        if (currentAudioRef.current === audio) {
+          currentAudioRef.current = null;
+        }
+        setSpeakingMessageId(null);
+      };
+
+      await audio.play();
+      return;
+    } catch (ttsErr) {
+      console.warn("Backend TTS endpoint failed, attempting browser voice fallback:", ttsErr.message);
+    }
+
+    // 3. Fall back to speechSynthesis ONLY when a voice for that language exists
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      const voices = (window.speechSynthesis.getVoices && window.speechSynthesis.getVoices().length > 0)
+        ? window.speechSynthesis.getVoices()
+        : availableVoices;
+      const targetFamily = targetLang === 'te' ? 'te' : (targetLang === 'hi' ? 'hi' : 'en');
+
+      const matchedVoice = voices.find(v => {
+        const vLang = (v.lang || '').toLowerCase().replace('_', '-');
+        const vName = (v.name || '').toLowerCase();
+        if (targetFamily === 'te') {
           return vLang === 'te-in' || vLang.startsWith('te') || vName.includes('telugu');
-        });
-      } else if (targetFamily === 'hi') {
-        // Priority for Hindi: exact hi-IN -> contains hindi -> starts with hi
-        matchedVoice = voices.find(v => {
-          const vLang = (v.lang || '').toLowerCase().replace('_', '-');
-          const vName = (v.name || '').toLowerCase();
+        } else if (targetFamily === 'hi') {
           return vLang === 'hi-in' || vLang.startsWith('hi') || vName.includes('hindi');
-        });
-      } else {
-        // English
-        matchedVoice = voices.find(v => {
-          const vLang = (v.lang || '').toLowerCase().replace('_', '-');
-          const vName = (v.name || '').toLowerCase();
+        } else {
           return vLang === 'en-in' || vName.includes('india') || vLang.startsWith('en');
-        });
-      }
+        }
+      });
 
-      // CRITICAL: NEVER assign an English voice if the text is in Telugu or Hindi!
       if (matchedVoice) {
+        const utterance = new SpeechSynthesisUtterance(cleanText);
         utterance.voice = matchedVoice;
+        utterance.lang = matchedVoice.lang || (targetFamily === 'te' ? 'te-IN' : (targetFamily === 'hi' ? 'hi-IN' : 'en-IN'));
+        utterance.rate = 0.95;
+        utterance.pitch = 1.0;
+        utterance.onend = () => setSpeakingMessageId(null);
+        utterance.onerror = () => setSpeakingMessageId(null);
+        window.speechSynthesis.speak(utterance);
+        return;
       }
     }
 
-    utterance.rate = 0.95;
-    utterance.pitch = 1.0;
+    // 4. Voice not available for this language
+    setSpeakingMessageId(null);
+    setVoiceNotice("Voice not available for this language");
+    setTimeout(() => setVoiceNotice(''), 4000);
+  };
 
-    utterance.onend = () => {
-      setSpeakingMessageId(null);
-    };
+  // Localized microphone error messages
+  const getMicErrorMessage = (errorType, lang) => {
+    switch (errorType) {
+      case 'not-allowed':
+      case 'service-not-allowed':
+      case 'NotAllowedError':
+      case 'PermissionDeniedError':
+        if (lang === 'te') {
+          return "మైక్రోఫోన్ అనుమతి నిరాకరించబడింది. దయచేసి బ్రౌజర్ సెట్టింగ్స్‌లో మైక్ అనుమతించండి.";
+        }
+        if (lang === 'hi') {
+          return "माइक्रोफ़ोन की अनुमति अस्वीकृत है। कृपया ब्राउज़र सेटिंग्स में माइक की अनुमति दें।";
+        }
+        return "Microphone permission denied. Please allow microphone access in your browser settings.";
 
-    utterance.onerror = (e) => {
-      console.warn("TTS playback status/event:", e);
-      setSpeakingMessageId(null);
-    };
+      case 'no-speech':
+        if (lang === 'te') {
+          return "మాటలు వినబడలేదు. దయచేసి మైక్ నొక్కి మళ్లీ స్పష్టంగా మాట్లాడండి.";
+        }
+        if (lang === 'hi') {
+          return "कोई आवाज सुनाई नहीं दी। कृपया माइक दबाकर पुनः स्पष्ट बोलें।";
+        }
+        return "No speech detected. Please tap the mic and speak clearly.";
 
-    window.speechSynthesis.speak(utterance);
+      case 'network':
+        if (lang === 'te') {
+          return "వాయిస్ రికగ్నిషన్ నెట్‌వర్క్ లోపం. దయచేసి ఇంటర్నెట్ కనెక్షన్ తనిఖీ చేయండి.";
+        }
+        if (lang === 'hi') {
+          return "आवाज पहचान में नेटवर्क त्रुटि। कृपया इंटरनेट कनेक्शन जांचें।";
+        }
+        return "Voice recognition network error. Please check your internet connection.";
+
+      case 'audio-capture':
+        if (lang === 'te') {
+          return "మైక్రోఫోన్ పరికరం దొరకలేదు లేదా పనిచేయడం లేదు. మైక్రోఫోన్ తనిఖీ చేయండి.";
+        }
+        if (lang === 'hi') {
+          return "माइक्रोफ़ोन डिवाइस नहीं मिला या काम नहीं कर रहा है।";
+        }
+        return "No microphone detected or audio capture failed. Check your microphone.";
+
+      case 'language-not-supported':
+        if (lang === 'te') {
+          return "ఈ భాషకు వాయిస్ రికగ్నిషన్ సపోర్ట్ లేదు. దయచేసి టైప్ చేయండి లేదా వేరే భాష ఎంచుకోండి.";
+        }
+        if (lang === 'hi') {
+          return "इस भाषा के लिए आवाज पहचान समर्थित नहीं है। कृपया लिखकर पूछें।";
+        }
+        return "Voice recognition is not supported for this language on your browser. Please type your query.";
+
+      default:
+        if (lang === 'te') {
+          return "వాయిస్ రికగ్నిషన్ లోపం. దయచేసి మీ ప్రశ్నను టైప్ చేయండి.";
+        }
+        if (lang === 'hi') {
+          return "आवाज पहचान में समस्या आई। कृपया अपना सवाल लिखकर पूछें।";
+        }
+        return "Voice recognition error. Please type your question.";
+    }
   };
 
   // Speech-To-Text (Microphone Button)
-  const toggleListening = () => {
+  const toggleListening = async () => {
+    setMicError('');
+
     if (isListening) {
       if (recognitionRef.current) {
         try {
@@ -304,23 +411,24 @@ export default function AIAssistantPage() {
       return;
     }
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition = typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition);
 
     if (!SpeechRecognition) {
-      // Fallback simulation for unsupported environments
-      setIsListening(true);
-      setTimeout(() => {
-        setIsListening(false);
-        const demoQueries = {
-          te: "నా నేలలో నత్రజని తక్కువగా ఉంది. ఏం చేయాలి?",
-          hi: "मेरी मिट्टी में नाइट्रोजन की कमी कैसे दूर करें?",
-          en: "My soil has low Nitrogen. What should I do?"
-        };
-        const q = demoQueries[selectedLang] || demoQueries.te;
-        setInputMessage(q);
-        handleSendMessage(q, selectedLang);
-      }, 1200);
+      setMicError("Voice input needs Chrome on Android/desktop. Please type your question.");
       return;
+    }
+
+    // Request mic permission with getUserMedia and stop tracks
+    if (typeof navigator !== 'undefined' && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(track => track.stop());
+      } catch (err) {
+        console.warn("Microphone permission denied:", err);
+        setMicError(getMicErrorMessage('not-allowed', selectedLang));
+        setIsListening(false);
+        return;
+      }
     }
 
     try {
@@ -342,6 +450,7 @@ export default function AIAssistantPage() {
       recognition.onstart = () => {
         setIsListening(true);
         setInterimText('');
+        setMicError('');
       };
 
       recognition.onresult = (event) => {
@@ -374,9 +483,11 @@ export default function AIAssistantPage() {
         }
       };
 
-      recognition.onerror = () => {
+      recognition.onerror = (event) => {
+        console.warn("Speech recognition error:", event.error);
         setIsListening(false);
         setInterimText('');
+        setMicError(getMicErrorMessage(event.error, selectedLang));
       };
 
       recognition.onend = () => {
@@ -386,16 +497,10 @@ export default function AIAssistantPage() {
 
       recognition.start();
     } catch (err) {
-      console.warn("Speech recognition initialization fallback:", err);
-      setIsListening(true);
-      setTimeout(() => {
-        setIsListening(false);
-        const fallbackQuery = selectedLang === 'te' 
-          ? "నా నేలలో నత్రజని తక్కువగా ఉంది. ఏం చేయాలి?" 
-          : (selectedLang === 'hi' ? "मेरी मिट्टी में नाइट्रोजन की कमी कैसे दूर करें?" : "What is the condition of my soil?");
-        setInputMessage(fallbackQuery);
-        handleSendMessage(fallbackQuery, selectedLang);
-      }, 1200);
+      console.warn("Speech recognition initialization failed:", err);
+      setIsListening(false);
+      setInterimText('');
+      setMicError(getMicErrorMessage(err.name || 'error', selectedLang));
     }
   };
 
@@ -407,7 +512,13 @@ export default function AIAssistantPage() {
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+    }
     setSpeakingMessageId(null);
+    setMicError('');
+    setVoiceNotice('');
 
     // Detect language of the input query
     const detectedLang = explicitLang || detectInputLanguage(text);
@@ -427,36 +538,79 @@ export default function AIAssistantPage() {
     setMessages(prev => [...prev, newUserMsg]);
     setInputMessage('');
     setIsSending(true);
+    setLoadingStatus(null);
 
-    let sendError = null;
-    try {
-      const backendRes = await api.chat.send(text, detectedLang);
-      if (backendRes && backendRes.response) {
-        const botMsgId = backendRes.id || Date.now() + 1;
-        const respLang = backendRes.language || detectedLang;
-
-        const newBotMsg = {
-          id: botMsgId,
-          sender: 'bot',
-          text: backendRes.response,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          lang: respLang
-        };
-
-        setMessages(prev => [...prev, newBotMsg]);
-        setIsSending(false);
-
-        // Auto-speak response if enabled with strict language synchronization
-        if (autoSpeak) {
-          setTimeout(() => {
-            speakText(backendRes.response, respLang, botMsgId);
-          }, 300);
+    // Helper to send with 25s timeout
+    const sendWithTimeout = async (msgText, lang, timeoutMs = 25000) => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await api.chat.send(msgText, lang, { signal: controller.signal });
+        clearTimeout(timer);
+        return res;
+      } catch (err) {
+        clearTimeout(timer);
+        if (err.name === 'AbortError') {
+          const timeoutErr = new Error('Request timed out (25s)');
+          timeoutErr.isTimeout = true;
+          timeoutErr.isNetworkError = true;
+          throw timeoutErr;
         }
-        return;
+        throw err;
       }
-    } catch (err) {
-      console.warn("Backend chat send error:", err.message);
-      sendError = err;
+    };
+
+    let backendRes = null;
+    let sendError = null;
+
+    try {
+      backendRes = await sendWithTimeout(text, detectedLang, 25000);
+    } catch (firstErr) {
+      console.warn("First chat attempt failed/timed out:", firstErr.message);
+      sendError = firstErr;
+
+      // Show clear "server is waking up, retrying" message
+      const wakingMsg = detectedLang === 'te'
+        ? "సర్వర్ మేల్కొంటోంది, మళ్లీ ప్రయత్నిస్తోంది... (Server is waking up, retrying...)"
+        : (detectedLang === 'hi'
+            ? "सर्वर शुरू हो रहा है, पुनः प्रयास जारी है... (Server is waking up, retrying...)"
+            : "Server is waking up, retrying...");
+      setLoadingStatus(wakingMsg);
+
+      // One automatic retry with another 25-second timeout
+      try {
+        backendRes = await sendWithTimeout(text, detectedLang, 25000);
+        sendError = null;
+      } catch (retryErr) {
+        console.warn("Second chat attempt failed:", retryErr.message);
+        sendError = retryErr;
+      }
+    }
+
+    setLoadingStatus(null);
+
+    if (backendRes && backendRes.response) {
+      const botMsgId = backendRes.id || Date.now() + 1;
+      const respLang = backendRes.language || detectedLang;
+
+      const newBotMsg = {
+        id: botMsgId,
+        sender: 'bot',
+        text: backendRes.response,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        lang: respLang
+      };
+
+      setMessages(prev => [...prev, newBotMsg]);
+      setIsSending(false);
+
+      // Auto-speak response if enabled with strict language synchronization
+      if (autoSpeak) {
+        setTimeout(() => {
+          speakText(backendRes.response, respLang, botMsgId);
+        }, 300);
+      }
+      return;
     }
 
     // Determine the real reason in the user's language (network error vs 401 vs 500)
@@ -759,11 +913,13 @@ export default function AIAssistantPage() {
               <div className="p-3.5 rounded-2xl bg-white border border-[#E2EBE2] text-xs text-[#26332B] flex items-center gap-2.5 shadow-2xs">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#245C3A] animate-ping"></span>
                 <span className="font-medium">
-                  {selectedLang === 'te' 
-                    ? "కృషిసాథి AI మీ నేల కార్డును విశ్లేషిస్తోంది... (Analyzing soil data...)"
-                    : (selectedLang === 'hi' 
-                        ? "कृषिशाथी AI आपकी मिट्टी के आंकड़ों का विश्लेषण कर रहा है..." 
-                        : "KrishiSaathi AI is analyzing your soil test data...")}
+                  {loadingStatus || (
+                    selectedLang === 'te' 
+                      ? "కృషిసాథి AI మీ నేల కార్డును విశ్లేషిస్తోంది... (Analyzing soil data...)"
+                      : (selectedLang === 'hi' 
+                          ? "कृषिशाथी AI आपकी मिट्टी के आंकड़ों का विश्लेषण कर रहा है..." 
+                          : "KrishiSaathi AI is analyzing your soil test data...")
+                  )}
                 </span>
               </div>
             </div>
@@ -802,18 +958,53 @@ export default function AIAssistantPage() {
         {/* 6. High-Visibility Voice & Text Input Bar */}
         <div className="p-4 bg-white border-t border-[#E2EBE2] space-y-3">
           
+          {/* Voice Synthesis Notification Banner */}
+          {voiceNotice && (
+            <div className="p-2.5 px-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs font-semibold text-amber-900 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>{voiceNotice}</span>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setVoiceNotice('')}
+                className="text-amber-600 hover:text-amber-800 text-xs px-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {/* Speech-To-Text Warning / Error Banner */}
+          {micNotice && (
+            <div className="p-2.5 px-3.5 rounded-xl bg-red-50 border border-red-200 text-xs font-semibold text-red-800 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                <span>{micNotice}</span>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setMicError('')}
+                className="text-red-500 hover:text-red-700 text-xs px-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
           {/* Big Voice Microphone Bar */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-[#F8FAF7] to-[#E8F0E7] border border-[#D4E3D3]">
-            <div className="flex items-center gap-3">
-              {/* Large Animated Microphone Button */}
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              {/* Large Animated Microphone Button - Touch target min 56px */}
               <button
                 type="button"
                 onClick={toggleListening}
-                className={`relative w-14 h-14 rounded-full flex items-center justify-center transition shadow-md active:scale-95 cursor-pointer shrink-0 ${
+                className={`relative w-14 h-14 min-w-[56px] min-h-[56px] rounded-full flex items-center justify-center transition shadow-md active:scale-95 cursor-pointer shrink-0 z-10 ${
                   isListening 
                     ? "bg-red-600 text-white ring-4 ring-red-300 animate-pulse" 
                     : "bg-[#245C3A] hover:bg-[#1B462C] text-white ring-4 ring-[#E8F0E7]"
                 }`}
+                aria-label={isListening ? "Stop voice listening" : "Start voice listening"}
                 title={isListening ? "Listening... Tap to stop" : "Tap to Speak in your Language"}
               >
                 {isListening ? (
@@ -826,19 +1017,21 @@ export default function AIAssistantPage() {
                 )}
               </button>
 
-              <div>
-                <p className="text-xs font-black text-[#26332B]">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-black text-[#26332B] truncate">
                   {isListening 
-                    ? (selectedLang === 'te' ? "🔴 వింటున్నాను... దయచేసి మాట్లాడండి" : (selectedLang === 'hi' ? "🔴 सुन रहा हूँ... कृपया बोलिए" : "🔴 Listening... Speak clearly"))
+                    ? (selectedLang === 'te' ? "🔴 వింటున్నాను... మాట్లాడండి" : (selectedLang === 'hi' ? "🔴 सुन रहा हूँ... बोलिए" : "🔴 Listening... Speak clearly"))
                     : (selectedLang === 'te' ? "మైక్ నొక్కి తెలుగులో మాట్లాడండి" : (selectedLang === 'hi' ? "माइक दबाकर हिंदी में बोलें" : "Tap mic to speak your question in English"))}
                 </p>
-                <p className="text-[11px] text-[#5C6E63]">
-                  {selectedLang === 'te' ? "వాయిస్ రికగ్నిషన్ ఆటోమేటిక్‌గా సమాధానం ఇస్తుంది" : "Automatic speech recognition & voice answer"}
+                <p className="text-[11px] text-[#5C6E63] truncate">
+                  {isListening 
+                    ? (selectedLang === 'te' ? "పూర్తయ్యాక మైక్ మళ్లీ నొక్కండి" : "Tap mic again to finish") 
+                    : (selectedLang === 'te' ? "వాయిస్ రికగ్నిషన్ ఆటోమేటిక్‌గా సమాధానం ఇస్తుంది" : "Automatic speech recognition & voice answer")}
                 </p>
               </div>
             </div>
 
-            <span className="text-[11px] font-bold text-[#245C3A] bg-white px-3 py-1 rounded-full border border-[#D4E3D3]">
+            <span className="text-[11px] font-bold text-[#245C3A] bg-white px-3 py-1 rounded-full border border-[#D4E3D3] self-start sm:self-auto shrink-0">
               {selectedLang === 'te' ? "తెలుగు వాయిస్" : (selectedLang === 'hi' ? "हिंदी आवाज़" : "English Voice")}
             </span>
           </div>

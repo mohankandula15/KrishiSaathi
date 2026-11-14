@@ -1,7 +1,7 @@
 // KrishiSaathi Frontend API Client
 // Connects React frontend to FastAPI + Supabase backend
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 function getAuthHeader() {
   const token = localStorage.getItem('krishisaathi_token');
@@ -149,12 +149,25 @@ export const api = {
   // Chat conversation history
   chat: {
     getHistory: () => request('/chat/history'),
-    send: (message, language) => request('/chat/send', {
+    send: (message, language, options = {}) => request('/chat/send', {
       method: 'POST',
       body: { message, language: language || undefined },
+      ...options,
     }),
     clear: () => request('/chat/history', {
       method: 'DELETE',
     }),
+    getTTSAudio: async (text, lang) => {
+      const url = `${API_BASE_URL}/chat/tts?text=${encodeURIComponent(text)}&lang=${encodeURIComponent(lang || 'te')}`;
+      const token = localStorage.getItem('krishisaathi_token');
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const res = await fetch(url, { headers });
+      if (!res.ok) {
+        const err = new Error(`TTS synthesis failed with status ${res.status}`);
+        err.status = res.status;
+        throw err;
+      }
+      return await res.blob();
+    },
   },
 };

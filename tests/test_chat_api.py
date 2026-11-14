@@ -119,6 +119,32 @@ def test_chat_pipeline():
     print(f"   Messages after deletion: {len(hist_after)}")
     assert len(hist_after) == 0
 
+    # 11. Test Neural gTTS Endpoint (/api/chat/tts)
+    print("\n11. Testing TTS endpoint (/api/chat/tts)...")
+    # A. Auth required
+    unauth_tts = client.get("/api/chat/tts?text=test")
+    assert unauth_tts.status_code == 401
+
+    # B. Telugu TTS
+    te_tts = client.get("/api/chat/tts", params={"text": "నమస్కారం రైతు గారు! 🙏🌾", "lang": "te"}, headers=headers)
+    assert te_tts.status_code == 200
+    assert "audio/mpeg" in te_tts.headers.get("content-type", "")
+    assert len(te_tts.content) > 1000
+
+    # C. Hindi TTS
+    hi_tts = client.get("/api/chat/tts", params={"text": "नमस्ते किसान जी! 🙏", "lang": "hi"}, headers=headers)
+    assert hi_tts.status_code == 200
+    assert "audio/mpeg" in hi_tts.headers.get("content-type", "")
+    assert len(hi_tts.content) > 1000
+
+    # D. English TTS with Markdown stripping and 500-char truncation
+    en_tts = client.get("/api/chat/tts", params={"text": "### **Hello Farmer!** 🌾 " + ("Nitrogen is essential for plant vegetative growth. " * 20), "lang": "en"}, headers=headers)
+    assert en_tts.status_code == 200
+    assert "audio/mpeg" in en_tts.headers.get("content-type", "")
+    assert len(en_tts.content) > 1000
+
+    print("   TTS endpoint validated successfully (Telugu, Hindi, English).")
+
     print("\n>>> ALL MULTILINGUAL CHAT & VOICE PIPELINE TESTS PASSED CLEANLY! <<<")
 
 if __name__ == "__main__":

@@ -10,3 +10,4 @@ pypdfium2
 pillow
 google-genai
 supabase
+gTTS

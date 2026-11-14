@@ -1,7 +1,9 @@
 import os
 import re
-from fastapi import APIRouter, Depends, HTTPException, status
+import io
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from typing import Dict, Any, List, Optional
+from gtts import gTTS
 from ..models import ChatMessageCreate, ChatMessageResponse
 from ..database import db
 from ..dependencies import get_current_farmer
@@ -584,3 +586,59 @@ def clear_chat_history(current_farmer: Dict[str, Any] = Depends(get_current_farm
     """Clear conversation history for the current farmer."""
     db.clear_chat_history_by_farmer(current_farmer["id"])
     return None
+
+
+@router.get("/tts")
+def get_tts_audio(
+    text: str,
+    lang: str = "te",
+    current_farmer: Dict[str, Any] = Depends(get_current_farmer)
+):
+    """
+    Generate audio/mpeg stream via gTTS for Telugu, Hindi, or English.
+    Requires authentication, limits text to 500 characters, and strips markdown/emojis.
+    """
+    if not text or not text.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Text parameter is required for TTS"
+        )
+
+    # 1. Strip markdown syntax (bullets, bold, italics, links, hashes)
+    clean = re.sub(r'[*#_`~•]', '', text)
+    clean = re.sub(r'https?://\S+', '', clean)
+    # Remove emojis and non-alphanumeric/non-punctuation symbols
+    clean = re.sub(r'[^\w\s\u0C00-\u0C7F\u0900-\u097F.,?!:;\'"()-]', ' ', clean)
+    clean = re.sub(r'\s+', ' ', clean).strip()
+
+    if not clean:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Valid text content is required after stripping markdown and symbols"
+        )
+
+    # 2. Limit text to 500 characters
+    clean = clean[:500].strip()
+
+    # 3. Validate lang parameter (te, hi, en)
+    target_lang = lang.lower().strip()[:2] if lang else "te"
+    if target_lang not in ("te", "hi", "en"):
+        target_lang = "te" if TELUGU_SCRIPT_REGEX.search(clean) else ("hi" if DEVANAGARI_SCRIPT_REGEX.search(clean) else "en")
+
+    last_err = None
+    for attempt in range(2):
+        try:
+            fp = io.BytesIO()
+            tts = gTTS(text=clean, lang=target_lang, slow=False)
+            tts.write_to_fp(fp)
+            fp.seek(0)
+            audio_bytes = fp.read()
+
+            return Response(content=audio_bytes, media_type="audio/mpeg")
+        except Exception as e:
+            last_err = e
+
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail=f"TTS synthesis error: {str(last_err)}"
+    )
