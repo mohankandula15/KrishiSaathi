@@ -29,18 +29,49 @@ async function request(endpoint, options = {}) {
 
     const data = await response.json().catch(() => ({}));
 
+    // On any 401 response, clear token & user and redirect to login
+    if (response.status === 401) {
+      localStorage.removeItem('krishisaathi_token');
+      localStorage.removeItem('krishisaathi_user');
+
+      const isLoginEndpoint = endpoint === '/auth/login';
+      const isLoginPage = typeof window !== 'undefined' && window.location.pathname.includes('/login');
+
+      if (!isLoginEndpoint && !isLoginPage && typeof window !== 'undefined') {
+        const message = 'Session expired, please log in again';
+        sessionStorage.setItem('login_message', message);
+        window.location.href = `/login?message=${encodeURIComponent(message)}`;
+      }
+
+      const err = new Error(data.detail || 'Session expired, please log in again');
+      err.status = 401;
+      err.data = data;
+      throw err;
+    }
+
     if (!response.ok) {
-      throw new Error(data.detail || `Request failed with status ${response.status}`);
+      const err = new Error(data.detail || `Request failed with status ${response.status}`);
+      err.status = response.status;
+      err.data = data;
+      throw err;
     }
 
     return data;
   } catch (err) {
+    if (!err.status) {
+      err.isNetworkError = true;
+    }
     console.warn(`API call to ${endpoint} failed:`, err.message);
     throw err;
   }
 }
 
 export const api = {
+  // Wake-up / Health check
+  health: () => {
+    const endpoint = API_BASE_URL.replace(/\/+$/, '').endsWith('/api') ? '/health' : '/api/health';
+    return request(endpoint);
+  },
   // Auth endpoints
   auth: {
     login: async (mobile_number, password) => {

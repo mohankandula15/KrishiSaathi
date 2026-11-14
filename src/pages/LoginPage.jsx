@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Sprout, 
   Phone, 
@@ -8,20 +8,33 @@ import {
   EyeOff, 
   ArrowRight, 
   Sparkles, 
-  ShieldCheck
+  ShieldCheck,
+  Loader2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login, demoLogin } = useAuth();
+  const location = useLocation();
+  const { login, demoLogin, isLoading: authLoading, authStatus } = useAuth();
 
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  // Check for session expired redirect message
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const msg = params.get('message') || sessionStorage.getItem('login_message');
+    if (msg) {
+      setError(msg);
+      sessionStorage.removeItem('login_message');
+    }
+  }, [location.search]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!mobile || mobile.length < 10) {
       setError('Please enter a valid 10-digit mobile number');
@@ -32,14 +45,32 @@ export default function LoginPage() {
       return;
     }
 
-    login(mobile, password);
-    navigate('/dashboard');
+    setIsSubmitting(true);
+    setError('');
+    try {
+      await login(mobile, password);
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.message || 'Login failed. Please check credentials.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleDemoLogin = (profileKey = 'punjab') => {
-    demoLogin(profileKey);
-    navigate('/dashboard');
+  const handleDemoLogin = async (profileKey = 'punjab') => {
+    setIsSubmitting(true);
+    setError('');
+    try {
+      await demoLogin(profileKey);
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.message || 'Demo login failed. Please retry.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  const isLoading = isSubmitting || authLoading;
 
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -64,6 +95,13 @@ export default function LoginPage() {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4">
         <div className="bg-white py-8 px-6 sm:px-10 rounded-3xl shadow-xl border border-stone-200">
           
+          {authStatus && (
+            <div className="mb-5 p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-bold flex items-center gap-2.5 animate-pulse">
+              <Loader2 className="w-4 h-4 animate-spin text-amber-700 shrink-0" />
+              <span>{authStatus}</span>
+            </div>
+          )}
+
           {error && (
             <div className="mb-5 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold">
               {error}
@@ -139,10 +177,20 @@ export default function LoginPage() {
             <div>
               <button
                 type="submit"
-                className="w-full py-4 px-4 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white font-black text-base shadow-lg shadow-emerald-700/20 flex items-center justify-center gap-2 transition active:scale-98"
+                disabled={isLoading}
+                className="w-full py-4 px-4 rounded-2xl bg-emerald-700 hover:bg-emerald-800 disabled:opacity-60 text-white font-black text-base shadow-lg shadow-emerald-700/20 flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer disabled:cursor-not-allowed"
               >
-                <span>Login</span>
-                <ArrowRight className="w-5 h-5" />
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Signing In...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Login</span>
+                    <ArrowRight className="w-5 h-5" />
+                  </>
+                )}
               </button>
             </div>
           </form>
@@ -162,8 +210,9 @@ export default function LoginPage() {
             <div className="space-y-2">
               <button
                 type="button"
+                disabled={isLoading}
                 onClick={() => handleDemoLogin('punjab')}
-                className="w-full py-2.5 px-3 rounded-xl border border-emerald-300 bg-emerald-50/70 hover:bg-emerald-100/70 text-left flex items-center justify-between text-xs transition"
+                className="w-full py-2.5 px-3 rounded-xl border border-emerald-300 bg-emerald-50/70 hover:bg-emerald-100/70 disabled:opacity-50 text-left flex items-center justify-between text-xs transition cursor-pointer disabled:cursor-not-allowed"
               >
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-lg bg-emerald-700 text-white flex items-center justify-center font-bold text-xs">
@@ -181,8 +230,9 @@ export default function LoginPage() {
 
               <button
                 type="button"
+                disabled={isLoading}
                 onClick={() => handleDemoLogin('maharashtra')}
-                className="w-full py-2.5 px-3 rounded-xl border border-amber-300 bg-amber-50/70 hover:bg-amber-100/70 text-left flex items-center justify-between text-xs transition"
+                className="w-full py-2.5 px-3 rounded-xl border border-amber-300 bg-amber-50/70 hover:bg-amber-100/70 disabled:opacity-50 text-left flex items-center justify-between text-xs transition cursor-pointer disabled:cursor-not-allowed"
               >
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-lg bg-amber-700 text-white flex items-center justify-center font-bold text-xs">

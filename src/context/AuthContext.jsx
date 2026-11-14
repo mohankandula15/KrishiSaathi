@@ -19,14 +19,15 @@ export const DEMO_FARMER = {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('krishisaathi_user');
-    if (saved) {
+    const token = localStorage.getItem('krishisaathi_token');
+    if (saved && token) {
       try {
         return JSON.parse(saved);
-      } catch (e) {
-        return DEMO_FARMER;
+      } catch {
+        return null;
       }
     }
-    return DEMO_FARMER;
+    return null;
   });
 
   const [language, setLanguage] = useState(() => {
@@ -34,6 +35,8 @@ export function AuthProvider({ children }) {
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [authStatus, setAuthStatus] = useState(null);
+  const [authError, setAuthError] = useState(null);
 
   useEffect(() => {
     if (user) {
@@ -63,13 +66,15 @@ export function AuthProvider({ children }) {
           }
         })
         .catch(err => {
-          console.log("Using cached/demo user session:", err.message);
+          console.log("Profile refresh error:", err.message);
         });
     }
   }, []);
 
   const login = async (mobile, password) => {
     setIsLoading(true);
+    setAuthStatus(null);
+    setAuthError(null);
     try {
       const res = await api.auth.login(mobile, password);
       if (res && res.farmer) {
@@ -79,77 +84,114 @@ export function AuthProvider({ children }) {
         }
         return res.farmer;
       }
+      const me = await api.auth.getMe();
+      if (me) {
+        setUser(me);
+        if (me.preferred_language) setLanguage(me.preferred_language);
+        return me;
+      }
     } catch (err) {
-      console.warn("Backend login error, falling back to local session:", err.message);
-      // Fallback for offline demo
-      const loggedUser = {
-        ...DEMO_FARMER,
-        mobile_number: mobile || "9876543210",
-        name: mobile === "9876543210" ? "Ramesh Kumar" : "Kisan Mitr"
-      };
-      setUser(loggedUser);
-      return loggedUser;
+      console.warn("Backend login error:", err.message);
+      setAuthError(err.message || "Invalid mobile number or password");
+      throw err;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const demoLogin = async (profileKey = 'punjab') => {
+  const demoLogin = async (profileKey = 'punjab', onStatusUpdate = null) => {
     setIsLoading(true);
-    try {
-      const mobile = profileKey === 'maharashtra' ? "9812345678" : "9876543210";
-      const name = profileKey === 'maharashtra' ? "Suresh Patil" : "Ramesh Kumar";
-      const district = profileKey === 'maharashtra' ? "Pune" : "Ludhiana";
-      const state = profileKey === 'maharashtra' ? "Maharashtra" : "Punjab";
-      const lang = profileKey === 'maharashtra' ? "mr" : "en";
+    setAuthStatus(null);
+    setAuthError(null);
 
-      // Try registering/logging in via backend
+    const updateStatus = (msg) => {
+      setAuthStatus(msg);
+      if (typeof onStatusUpdate === 'function') {
+        onStatusUpdate(msg);
+      }
+    };
+
+    const maxRetries = 3;
+    const retryDelay = 5000;
+    const mobile = profileKey === 'maharashtra' ? "9812345678" : "9876543210";
+    const name = profileKey === 'maharashtra' ? "Suresh Patil" : "Ramesh Kumar";
+    const district = profileKey === 'maharashtra' ? "Pune" : "Ludhiana";
+    const state = profileKey === 'maharashtra' ? "Maharashtra" : "Punjab";
+    const lang = profileKey === 'maharashtra' ? "mr" : "en";
+
+    let lastError = null;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        await api.auth.register({
-          name,
-          mobile_number: mobile,
-          password: "DemoPassword123",
-          village: profileKey === 'maharashtra' ? "Baramati" : "Kila Raipur",
-          district,
-          state,
-          preferred_language: lang
-        });
-      } catch (e) {
-        // If already exists, login
-        await api.auth.login(mobile, "DemoPassword123");
-      }
+        if (attempt > 0) {
+          updateStatus("Server is waking up, retrying...");
+        }
 
-      const farmerProfile = await api.auth.getMe();
-      setUser(farmerProfile);
-      setLanguage(farmerProfile.preferred_language || lang);
-    } catch (err) {
-      // Fallback
-      if (profileKey === 'maharashtra') {
-        const mhUser = {
-          id: "demo-farmer-mh",
-          name: "Suresh Patil",
-          nameHindi: "सुरेश पाटिल",
-          mobile_number: "9812345678",
-          village: "Baramati",
-          district: "Pune",
-          state: "Maharashtra",
-          preferred_language: "mr",
-          landSize: "4.2 Acres",
-          primaryCrop: "Cotton & Soybean"
-        };
-        setUser(mhUser);
-        setLanguage('mr');
-      } else {
-        setUser(DEMO_FARMER);
-        setLanguage('en');
+        // Try login first (trying DemoPassword123 then password123)
+        let loginSuccess = false;
+        try {
+          const res = await api.auth.login(mobile, "DemoPassword123");
+          if (res?.access_token) loginSuccess = true;
+        } catch {
+          try {
+            const res = await api.auth.login(mobile, "password123");
+            if (res?.access_token) loginSuccess = true;
+          } catch {
+            loginSuccess = false;
+          }
+        }
+
+        // If not logged in, try registering
+        if (!loginSuccess) {
+          try {
+            await api.auth.register({
+              name,
+              mobile_number: mobile,
+              password: "DemoPassword123",
+              village: profileKey === 'maharashtra' ? "Baramati" : "Kila Raipur",
+              district,
+              state,
+              preferred_language: lang
+            });
+          } catch {
+            // If already registered, attempt login one more time
+            await api.auth.login(mobile, "DemoPassword123");
+          }
+        }
+
+        const farmerProfile = await api.auth.getMe();
+        if (!farmerProfile) {
+          throw new Error("Unable to retrieve farmer profile from server");
+        }
+
+        setUser(farmerProfile);
+        setLanguage(farmerProfile.preferred_language || lang);
+        updateStatus(null);
+        setAuthError(null);
+        setIsLoading(false);
+        return farmerProfile;
+      } catch (err) {
+        lastError = err;
+        console.warn(`Backend login/register attempt ${attempt + 1} failed:`, err.message);
+        if (attempt < maxRetries) {
+          updateStatus("Server is waking up, retrying...");
+          await new Promise(res => setTimeout(res, retryDelay));
+        }
       }
-    } finally {
-      setIsLoading(false);
     }
+
+    // Only show a final error after retries. No silent fake-user fallback.
+    setIsLoading(false);
+    updateStatus(null);
+    const finalErrorMessage = lastError?.message || "Server is waking up, retrying... failed. Server unreachable.";
+    setAuthError(finalErrorMessage);
+    throw new Error(finalErrorMessage);
   };
 
   const register = async (farmerData) => {
     setIsLoading(true);
+    setAuthStatus(null);
+    setAuthError(null);
     try {
       const payload = {
         name: farmerData.name,
@@ -169,24 +211,16 @@ export function AuthProvider({ children }) {
         }
         return res.farmer;
       }
-    } catch (err) {
-      console.warn("Backend register error, saving locally:", err.message);
-      const newUser = {
-        id: `farmer-${Date.now()}`,
-        name: farmerData.name || "Farmer",
-        mobile_number: farmerData.mobile,
-        village: farmerData.village || "Village",
-        district: farmerData.district || "District",
-        state: farmerData.state || "State",
-        preferred_language: farmerData.preferredLanguage || "en",
-        landSize: farmerData.landSize || "2.0 Acres",
-        primaryCrop: farmerData.primaryCrop || "Wheat"
-      };
-      setUser(newUser);
-      if (farmerData.preferredLanguage) {
-        setLanguage(farmerData.preferredLanguage);
+      const me = await api.auth.getMe();
+      if (me) {
+        setUser(me);
+        if (me.preferred_language) setLanguage(me.preferred_language);
+        return me;
       }
-      return newUser;
+    } catch (err) {
+      console.warn("Backend register error:", err.message);
+      setAuthError(err.message || "Registration failed");
+      throw err;
     } finally {
       setIsLoading(false);
     }
@@ -231,7 +265,9 @@ export function AuthProvider({ children }) {
         updateProfile,
         logout,
         isLoading,
-        isAuthenticated: !!user
+        authStatus,
+        authError,
+        isAuthenticated: !!user && !!localStorage.getItem('krishisaathi_token')
       }}
     >
       {children}

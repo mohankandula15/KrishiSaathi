@@ -144,6 +144,21 @@ class DatabaseManager:
                     """,
                     ("demo-report-punjab", demo_id, "North Field Soil Health Card", "/uploads/sample_soil_report.pdf", created_at, default_soil_data)
                 )
+
+            # Ensure default demo farmer 2 (Maharashtra) exists
+            cursor.execute("SELECT id FROM farmers WHERE mobile_number = '9812345678'")
+            if not cursor.fetchone():
+                from .security import hash_password
+                pw_hash_mh = hash_password("password123")
+                demo_mh_id = "demo-farmer-mh"
+                created_at_mh = datetime.now(timezone.utc).isoformat()
+                cursor.execute(
+                    """
+                    INSERT INTO farmers (id, name, mobile_number, password_hash, village, district, state, preferred_language, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (demo_mh_id, "Suresh Patil", "9812345678", pw_hash_mh, "Baramati", "Pune", "Maharashtra", "mr", created_at_mh)
+                )
             conn.commit()
 
     # ==========================================================================

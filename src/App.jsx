@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate, Outlet } from 'react-router-dom';
+import { api } from './services/api';
 import { AuthProvider } from './context/AuthContext';
 import { SoilProvider } from './context/SoilContext';
 import Navbar from './components/Navbar';
@@ -44,6 +45,13 @@ function PublicLayout() {
 }
 
 export default function App() {
+  // Wake up backend (e.g. Render free instance cold start) on app mount
+  useEffect(() => {
+    api.health().catch(err => {
+      console.warn("Backend health wake-up ping:", err.message);
+    });
+  }, []);
+
   return (
     <Router>
       <AuthProvider>

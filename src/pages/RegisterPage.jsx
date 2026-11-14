@@ -39,7 +39,7 @@ export default function RegisterPage() {
     setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) {
       setError('Please enter your full name');
@@ -58,8 +58,12 @@ export default function RegisterPage() {
       return;
     }
 
-    register(formData);
-    navigate('/dashboard');
+    try {
+      await register(formData);
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.message || 'Registration failed. Please try again.');
+    }
   };
 
   return (

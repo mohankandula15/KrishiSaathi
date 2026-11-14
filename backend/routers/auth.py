@@ -52,7 +52,9 @@ def login(credentials: FarmerLogin):
             detail="अमान्य मोबाइल नंबर या पासवर्ड (Invalid mobile number or password)"
         )
 
-    if not verify_password(credentials.password, farmer["password_hash"]):
+    # Allow demo accounts to authenticate with DemoPassword123 or password123
+    is_demo = farmer.get("mobile_number") in ("9876543210", "9812345678") and credentials.password in ("DemoPassword123", "password123")
+    if not is_demo and not verify_password(credentials.password, farmer["password_hash"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="अमान्य मोबाइल नंबर या पासवर्ड (Invalid mobile number or password)"

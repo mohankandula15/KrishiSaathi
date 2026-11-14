@@ -5,21 +5,12 @@ import {
   MicOff, 
   Volume2, 
   VolumeX, 
-  Send, 
-  RotateCcw, 
-  Sparkles, 
+  Send,
   Globe, 
-  Sprout, 
   User, 
-  FileText, 
-  AlertCircle,
-  HelpCircle,
-  CheckCircle2,
   Trash2,
   ShieldCheck,
-  Radio,
-  Layers,
-  ChevronRight
+  Radio
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSoil } from '../context/SoilContext';
@@ -199,7 +190,7 @@ export default function AIAssistantPage() {
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop();
-        } catch (e) {}
+        } catch {}
       }
     };
   }, []);
@@ -306,7 +297,7 @@ export default function AIAssistantPage() {
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop();
-        } catch (e) {}
+        } catch {}
       }
       setIsListening(false);
       setInterimText('');
@@ -437,6 +428,7 @@ export default function AIAssistantPage() {
     setInputMessage('');
     setIsSending(true);
 
+    let sendError = null;
     try {
       const backendRes = await api.chat.send(text, detectedLang);
       if (backendRes && backendRes.response) {
@@ -464,14 +456,55 @@ export default function AIAssistantPage() {
       }
     } catch (err) {
       console.warn("Backend chat send error:", err.message);
+      sendError = err;
     }
 
-    // Friendly offline error message in user's language instead of hardcoded fake advice
+    // Determine the real reason in the user's language (network error vs 401 vs 500)
+    const isNetwork = 
+      sendError?.isNetworkError ||
+      sendError?.name === 'TypeError' ||
+      (typeof navigator !== 'undefined' && !navigator.onLine) ||
+      /network|fetch|connection|failed to fetch/i.test(sendError?.message || '');
+
+    const is401 = 
+      sendError?.status === 401 ||
+      /401|unauthorized|session expired/i.test(sendError?.message || '');
+
+    const is500 = 
+      (typeof sendError?.status === 'number' && sendError.status >= 500) ||
+      /500|502|503|504|internal server error|server error/i.test(sendError?.message || '');
+
     let offlineMessage = "Assistant is offline, please retry.";
-    if (detectedLang === 'te') {
-      offlineMessage = "సహాయకుడు ఆఫ్‌లైన్‌లో ఉన్నారు, దయచేసి మళ్లీ ప్రయత్నించండి.";
-    } else if (detectedLang === 'hi') {
-      offlineMessage = "सहायक ऑफ़लाइन है, कृपया पुनः प्रयास करें।";
+    if (is401) {
+      if (detectedLang === 'te') {
+        offlineMessage = "సహాయకుడు ఆఫ్‌లైన్‌లో ఉన్నారు: మీ లాగిన్ సెషన్ గడువు ముగిసింది (401). దయచేసి మళ్లీ లాగిన్ అవ్వండి.";
+      } else if (detectedLang === 'hi') {
+        offlineMessage = "सहायक ऑफ़लाइन है: सत्र समाप्त हो गया (401)। कृपया पुनः लॉगिन करें।";
+      } else {
+        offlineMessage = "Assistant is offline: Session expired (401). Please log in again.";
+      }
+    } else if (is500) {
+      if (detectedLang === 'te') {
+        offlineMessage = "సహాయకుడు ఆఫ్‌లైన్‌లో ఉన్నారు: సర్వర్ లోపం (500). దయచేసి కాసేపటి తర్వాత మళ్లీ ప్రయత్నించండి.";
+      } else if (detectedLang === 'hi') {
+        offlineMessage = "सहायक ऑफ़लाइन है: सर्वर त्रुटि (500)। कृपया थोड़ी देर बाद पुनः प्रयास करें।";
+      } else {
+        offlineMessage = "Assistant is offline: Server error (500). Please retry in a moment.";
+      }
+    } else if (isNetwork) {
+      if (detectedLang === 'te') {
+        offlineMessage = "సహాయకుడు ఆఫ్‌లైన్‌లో ఉన్నారు: నెట్‌వర్క్ లోపం. దయచేసి మీ ఇంటర్నెట్ కనెక్షన్ తనిఖీ చేసి మళ్లీ ప్రయత్నించండి.";
+      } else if (detectedLang === 'hi') {
+        offlineMessage = "सहायक ऑफ़लाइन है: नेटवर्क त्रुटि। कृपया अपना इंटरनेट कनेक्शन जांचें और पुनः प्रयास करें।";
+      } else {
+        offlineMessage = "Assistant is offline: Network error. Please check your connection and retry.";
+      }
+    } else {
+      if (detectedLang === 'te') {
+        offlineMessage = "సహాయకుడు ఆఫ్‌లైన్‌లో ఉన్నారు, దయచేసి మళ్లీ ప్రయత్నించండి.";
+      } else if (detectedLang === 'hi') {
+        offlineMessage = "सहायक ऑफ़लाइन है, कृपया पुनः प्रयास करें।";
+      }
     }
 
     const botMsgId = Date.now() + 1;
@@ -498,7 +531,7 @@ export default function AIAssistantPage() {
     setSpeakingMessageId(null);
     try {
       await api.chat.clear();
-    } catch (e) {}
+    } catch {}
 
     setMessages([
       {
