@@ -105,6 +105,45 @@ class DatabaseManager:
                     FOREIGN KEY (farmer_id) REFERENCES farmers(id) ON DELETE CASCADE
                 );
             """)
+
+            # Ensure default demo farmer exists for seamless testing and local demo usage
+            cursor.execute("SELECT id FROM farmers WHERE mobile_number = '9876543210'")
+            if not cursor.fetchone():
+                from .security import hash_password
+                pw_hash = hash_password("password123")
+                demo_id = "demo-farmer-punjab"
+                created_at = datetime.now(timezone.utc).isoformat()
+                cursor.execute(
+                    """
+                    INSERT INTO farmers (id, name, mobile_number, password_hash, village, district, state, preferred_language, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (demo_id, "Ramesh Kumar", "9876543210", pw_hash, "Kila Raipur", "Ludhiana", "Punjab", "en", created_at)
+                )
+
+                # Also insert initial soil report for demo farmer
+                default_soil_data = json.dumps({
+                    "healthScore": 76,
+                    "overallStatus": "Neutral Soil • Low Nitrogen • High Potassium",
+                    "soilType": "Alluvial Sandy Loam",
+                    "ph": {"value": 7.2, "rating": "Neutral"},
+                    "nitrogen": {"symbol": "N", "value": 185.0, "unit": "kg/ha", "rating": "Low"},
+                    "phosphorus": {"symbol": "P", "value": 18.4, "unit": "kg/ha", "rating": "Medium"},
+                    "potassium": {"symbol": "K", "value": 295.0, "unit": "kg/ha", "rating": "High"},
+                    "organic_carbon": {"value": 0.48, "unit": "%", "rating": "Low"},
+                    "ec": {"value": 0.38, "unit": "dS/m", "rating": "Normal"},
+                    "micronutrients": {
+                        "zinc": {"symbol": "Zn", "value": 0.45, "unit": "ppm", "rating": "Low"},
+                        "sulphur": {"symbol": "S", "value": 12.5, "unit": "ppm", "rating": "Medium"}
+                    }
+                })
+                cursor.execute(
+                    """
+                    INSERT INTO soil_reports (id, farmer_id, report_name, file_url, upload_date, extracted_soil_data)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    ("demo-report-punjab", demo_id, "North Field Soil Health Card", "/uploads/sample_soil_report.pdf", created_at, default_soil_data)
+                )
             conn.commit()
 
     # ==========================================================================

@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File,
 from typing import Dict, Any, List, Optional
 from ..models import SoilReportCreate, SoilReportResponse, SoilExtractionResponse
 from ..database import db, using_supabase, supabase_client
-from ..dependencies import get_current_farmer
+from ..dependencies import get_current_farmer, get_optional_farmer
 from ..config import settings
 from ..extractor import process_soil_file_and_extract
 from ..agronomy import calculate_fertilizer_prescription, recommend_crops_for_farm
@@ -75,7 +75,7 @@ def calculate_agronomy_recommendations(soil_data: Dict[str, Any]) -> Dict[str, A
 @router.post("/extract", response_model=SoilExtractionResponse)
 async def extract_soil_report_preview(
     file: UploadFile = File(...),
-    current_farmer: Dict[str, Any] = Depends(get_current_farmer)
+    current_farmer: Optional[Dict[str, Any]] = Depends(get_optional_farmer)
 ):
     """
     Step 1: Uploads document (PDF, JPG, JPEG, PNG), runs OCR & parametric extraction,
@@ -89,7 +89,8 @@ async def extract_soil_report_preview(
             detail="Unsupported file format. Please upload PDF, JPG, JPEG, or PNG."
         )
 
-    unique_filename = f"scan_{current_farmer['id']}_{uuid.uuid4().hex[:8]}{file_ext}"
+    farmer_id = current_farmer["id"] if current_farmer else "guest"
+    unique_filename = f"scan_{farmer_id}_{uuid.uuid4().hex[:8]}{file_ext}"
     settings.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     local_path = settings.UPLOAD_DIR / unique_filename
 

@@ -161,3 +161,22 @@ def test_chat_history_persistence():
     assert history_res.status_code == 200
     assert len(history_res.json()) == 1
     assert history_res.json()[0]["message"] == "गेहूं के लिए यूरिया की मात्रा कितनी है?"
+
+def test_extract_soil_report_multipart():
+    """Test /api/soil-reports/extract endpoint with multipart file upload."""
+    sample_pdf_path = Path(__file__).resolve().parent.parent.parent / "tests" / "samples" / "sample_soil_report.pdf"
+    if sample_pdf_path.exists():
+        content = sample_pdf_path.read_bytes()
+    else:
+        content = b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Count 1/Kids[3 0 R]>>endobj\n3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R/Resources<<>>>>endobj\nxref\n0 4\n0000000000 65535 f \n0000000010 00000 n \n0000000060 00000 n \n0000000118 00000 n \ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n206\n%%EOF"
+
+    files = {"file": ("sample_soil_report.pdf", content, "application/pdf")}
+    res = client.post("/api/soil-reports/extract", files=files)
+    assert res.status_code == 200
+    data = res.json()
+    assert "extracted_soil_data" in data
+    assert "file_url" in data
+    assert "report_name" in data
+    assert "avg_confidence" in data
+    assert "requires_confirmation" in data
+    assert "missing_core" in data

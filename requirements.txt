@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+pydantic
+python-dotenv
+python-multipart
+bcrypt
+PyJWT
+pypdf
+pypdfium2
+pillow
+google-genai
+supabase

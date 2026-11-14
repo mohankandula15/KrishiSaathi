@@ -463,61 +463,34 @@ export default function AIAssistantPage() {
         return;
       }
     } catch (err) {
-      console.warn("Backend chat send error, generating local fallback:", err.message);
+      console.warn("Backend chat send error:", err.message);
     }
 
-    // Local fallback response preserving detected language
-    setTimeout(() => {
-      let botAnswer = "";
-      const lower = text.toLowerCase();
-      const targetLang = detectedLang;
+    // Friendly offline error message in user's language instead of hardcoded fake advice
+    let offlineMessage = "Assistant is offline, please retry.";
+    if (detectedLang === 'te') {
+      offlineMessage = "సహాయకుడు ఆఫ్‌లైన్‌లో ఉన్నారు, దయచేసి మళ్లీ ప్రయత్నించండి.";
+    } else if (detectedLang === 'hi') {
+      offlineMessage = "सहायक ऑफ़लाइन है, कृपया पुनः प्रयास करें।";
+    }
 
-      if (targetLang === 'te') {
-        if (lower.includes('nitrogen') || lower.includes('నత్రజని') || lower.includes('యూరియా') || lower.includes('takkuva') || lower.includes('తక్కువ')) {
-          botAnswer = `నమస్కారం ${user?.name || 'రైతు'} గారు! మీ నేల పరీక్ష ప్రకారం నత్రజని (Nitrogen) 185 kg/ha మాత్రమే ఉంది. ఇది సిఫార్సు చేసిన 280 kg/ha కంటే తక్కువ (లోపం).\n\nఎరువుల సూచన: ఎకరానికి 2.2 బస్తాల వేప పూత పూసిన యూరియాను 3 దఫాలుగా వేయండి (విత్తేటప్పుడు 35 kg, 21 రోజులకు 35 kg, 45 రోజులకు 30 kg). DAP వేస్తుంటే అందులోని నత్రజనిని తగ్గించండి!`;
-        } else if (lower.includes('crop') || lower.includes('పంట') || lower.includes('panta')) {
-          botAnswer = `మీ నేల లక్షణాలు (pH ${activeReport?.ph?.value ?? 7.2}, ${activeReport?.soilType ?? "Alluvial Loam"}) ఆధారంగా సిఫార్సు చేసిన పంటలు:\n• వేరుశనగ (కదిరి 6, కదిరి 9, ధరణి)\n• ప్రత్తి (Bt హైబ్రిడ్స్)\n• మిరప (గుంటూరు సన్నం)\n• వరి (BPT 5204 Samba Mahsuri)`;
-        } else if (lower.includes('carbon') || lower.includes('కర్బనం') || lower.includes('oc')) {
-          botAnswer = `మీ నేలలో సేంద్రీయ కర్బనం 0.48% (తక్కువ) ఉంది. విత్తే ముందు ఎకరానికి 4-5 టన్నుల పశువుల ఎరువు లేదా వర్మీ కంపోస్ట్ వేయండి మరియు వేసవిలో జీలుగ/జనుము సాగు చేసి నేలలో కలియదున్నండి.`;
-        } else {
-          botAnswer = `నమస్కారం ${user?.name || 'రైతు'} గారు! మీ నేల ఆరోగ్య కార్డు (${activeReport?.title || activeReport?.id}) ప్రకారం pH ${activeReport?.ph?.value ?? 7.2} వద్ద ఉంది. సమతుల్య NPK ఎరువుల వాడకంతో అధిక దిగుబడి సాధించవచ్చు.`;
-        }
-      } else if (targetLang === 'hi') {
-        if (lower.includes('nitrogen') || lower.includes('नाइट्रोजन') || lower.includes('यूरिया') || lower.includes('kam') || lower.includes('कम')) {
-          botAnswer = `नमस्ते ${user?.name || 'किसान'} जी! आपकी मिट्टी स्वास्थ्य रिपोर्ट के अनुसार नाइट्रोजन 185 kg/ha (कमी) पर है। यूरिया की अनुशंसित मात्रा 2.2 बोरी प्रति एकड़ 3 खुराकों में दें।`;
-        } else if (lower.includes('crop') || lower.includes('फसल') || lower.includes('fasal')) {
-          botAnswer = `आपकी मिट्टी के अनुसार मूंगफली, कपास, मिर्च और धान सबसे उपयुक्त फसलें हैं।`;
-        } else {
-          botAnswer = `नमस्ते ${user?.name || 'किसान'} जी! आपकी मिट्टी का pH 7.2 संतुलित है। संतुलित खाद के प्रयोग से अच्छी पैदावार मिलेगी।`;
-        }
-      } else {
-        if (lower.includes('nitrogen') || lower.includes('urea') || lower.includes('low')) {
-          botAnswer = `Hello ${user?.name || 'Farmer'}! Based on your soil report, Nitrogen is deficient (185 kg/ha). Recommended Urea is 2.2 bags per acre in 3 growth-stage splits.`;
-        } else if (lower.includes('crop')) {
-          botAnswer = `Top recommended crops for your soil: Groundnut (Kadiri 6), Cotton, Chilli, and Paddy.`;
-        } else {
-          botAnswer = `Hello ${user?.name || 'Farmer'}! Your soil health card indicates a neutral pH of 7.2. Nitrogen and Zinc supplementation will optimize your crop yields.`;
-        }
-      }
+    const botMsgId = Date.now() + 1;
+    const newBotMsg = {
+      id: botMsgId,
+      sender: 'bot',
+      text: offlineMessage,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      lang: detectedLang
+    };
 
-      const botMsgId = Date.now() + 1;
-      const newBotMsg = {
-        id: botMsgId,
-        sender: 'bot',
-        text: botAnswer,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        lang: targetLang
-      };
+    setMessages(prev => [...prev, newBotMsg]);
+    setIsSending(false);
 
-      setMessages(prev => [...prev, newBotMsg]);
-      setIsSending(false);
-
-      if (autoSpeak) {
-        setTimeout(() => {
-          speakText(botAnswer, targetLang, botMsgId);
-        }, 300);
-      }
-    }, 400);
+    if (autoSpeak) {
+      setTimeout(() => {
+        speakText(offlineMessage, detectedLang, botMsgId);
+      }, 300);
+    }
   };
 
   const handleClearChat = async () => {

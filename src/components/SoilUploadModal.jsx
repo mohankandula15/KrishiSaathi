@@ -72,10 +72,11 @@ export default function SoilUploadModal() {
   const { isUploadModalOpen, setIsUploadModalOpen, addReport } = useSoil();
   const navigate = useNavigate();
 
-  // Modal Step: 'upload' | 'processing' | 'validation'
+  // Modal Step: 'upload' | 'processing' | 'validation' | 'error'
   const [modalStep, setModalStep] = useState('upload');
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [fileError, setFileError] = useState(null);
   const [processingStep, setProcessingStep] = useState(0);
 
   // Extracted data state for validation & editing
@@ -116,22 +117,76 @@ export default function SoilUploadModal() {
   const resetModal = () => {
     setModalStep('upload');
     setSelectedFile(null);
+    setFileError(null);
     setProcessingStep(0);
     setIsUploadModalOpen(false);
   };
 
-  const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
+  const validateFile = (file) => {
+    if (!file) return "Please select a file to upload.";
+    const validExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
+    const fileNameParts = file.name.split('.');
+    const fileExt = fileNameParts.length > 1 ? fileNameParts.pop().toLowerCase() : '';
+    if (!validExtensions.includes(fileExt)) {
+      return "Invalid file type. Only PDF, JPG, JPEG, and PNG files are supported.";
+    }
+    const maxSizeBytes = 15 * 1024 * 1024; // 15MB
+    if (file.size > maxSizeBytes) {
+      return "File size exceeds 15MB limit. Please choose a file under 15MB.";
+    }
+    return null;
+  };
+
+  const handleFileSelection = (file) => {
+    const error = validateFile(file);
+    if (error) {
+      setFileError(error);
+      setSelectedFile(null);
+    } else {
+      setFileError(null);
+      setSelectedFile(file);
     }
   };
 
-  const handleStartExtraction = async (presetData = null) => {
-    setModalStep('processing');
-    setProcessingStep(0);
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      handleFileSelection(e.target.files[0]);
+    }
+  };
 
+  const handleTryAgain = () => {
+    setModalStep('upload');
+  };
+
+  const handleEnterManually = () => {
+    setReportTitle(selectedFile ? selectedFile.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ") : "Soil Health Card");
+    setFileUrl(null);
+    setConfidence(0);
+    setRequiresConfirmation(true);
+    setMissingCore(["N", "P", "K", "pH"]);
+    setMissingFlags({});
+    setParams({
+      nitrogen: '',
+      phosphorus: '',
+      potassium: '',
+      ph: '',
+      organicCarbon: '',
+      ec: '',
+      zinc: '',
+      sulphur: '',
+      iron: '',
+      boron: '',
+      copper: '',
+      manganese: ''
+    });
+    setModalStep('validation');
+  };
+
+  const handleStartExtraction = async (presetData = null) => {
     // If preloaded preset card is clicked
     if (presetData) {
+      setModalStep('processing');
+      setProcessingStep(0);
       setTimeout(() => {
         setReportTitle(presetData.title);
         setParams({
@@ -156,23 +211,31 @@ export default function SoilUploadModal() {
       return;
     }
 
+    if (!selectedFile) {
+      setModalStep('error');
+      return;
+    }
+
+    setModalStep('processing');
+    setProcessingStep(0);
+
     // Call real backend extraction endpoint
     let backendExtraction = null;
+    let timer = null;
     try {
-      if (selectedFile) {
-        const formData = new FormData();
-        formData.append('file', selectedFile);
-        
-        // Progress ticker
-        const timer = setInterval(() => {
-          setProcessingStep(prev => (prev < extractionSteps.length - 1 ? prev + 1 : prev));
-        }, 500);
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      
+      // Progress ticker
+      timer = setInterval(() => {
+        setProcessingStep(prev => (prev < extractionSteps.length - 1 ? prev + 1 : prev));
+      }, 500);
 
-        backendExtraction = await api.soilReports.extract(formData);
-        clearInterval(timer);
-      }
+      backendExtraction = await api.soilReports.extract(formData);
     } catch (err) {
-      console.warn("Backend extraction error, applying client-side OCR fallback:", err.message);
+      console.warn("Backend extraction error:", err.message);
+    } finally {
+      if (timer) clearInterval(timer);
     }
 
     if (backendExtraction && backendExtraction.extracted_soil_data) {
@@ -213,47 +276,29 @@ export default function SoilUploadModal() {
         copper: micro.copper?.value ?? 0.78,
         manganese: micro.manganese?.value ?? 3.8
       });
+      setModalStep('validation');
     } else {
-      // Realistic extraction preview if backend endpoint was unreachable
-      setReportTitle(selectedFile ? selectedFile.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ") : "Soil Health Card");
-      setConfidence(0.91);
-      setRequiresConfirmation(false);
-      setParams({
-        nitrogen: 185.0,
-        phosphorus: 18.4,
-        potassium: 295.0,
-        ph: 7.20,
-        organicCarbon: 0.48,
-        ec: 0.38,
-        zinc: 0.45,
-        sulphur: 12.5,
-        iron: 5.4,
-        boron: 0.52,
-        copper: 0.78,
-        manganese: 3.8
-      });
+      setModalStep('error');
     }
-
-    setModalStep('validation');
   };
 
   const handleConfirmAndSave = async () => {
     // Build confirmed structured report payload
-    const n = parseFloat(params.nitrogen) || 185;
-    const p = parseFloat(params.phosphorus) || 18.4;
-    const k = parseFloat(params.potassium) || 295;
-    const ph = parseFloat(params.ph) || 7.2;
-    const oc = parseFloat(params.organicCarbon) || 0.48;
-    const ec = parseFloat(params.ec) || 0.38;
-    const zn = parseFloat(params.zinc) || 0.45;
-    const s = parseFloat(params.sulphur) || 12.5;
+    const n = parseFloat(params.nitrogen) || 0;
+    const p = parseFloat(params.phosphorus) || 0;
+    const k = parseFloat(params.potassium) || 0;
+    const ph = parseFloat(params.ph) || 7.0;
+    const oc = parseFloat(params.organicCarbon) || 0;
+    const ec = parseFloat(params.ec) || 0;
+    const zn = parseFloat(params.zinc) || 0;
+    const s = parseFloat(params.sulphur) || 0;
 
-    const nClass = classifyLive('nitrogen', n);
-    const pClass = classifyLive('phosphorus', p);
-    const kClass = classifyLive('potassium', k);
-    const phClass = classifyLive('ph', ph);
-    const ocClass = classifyLive('organicCarbon', oc);
-    const ecClass = classifyLive('ec', ec);
+    const nClass = classifyLive('nitrogen', n) || { label: 'Medium', color: 'bg-emerald-50 text-[#245C3A] border-emerald-200' };
+    const pClass = classifyLive('phosphorus', p) || { label: 'Medium', color: 'bg-emerald-50 text-[#245C3A] border-emerald-200' };
+    const kClass = classifyLive('potassium', k) || { label: 'Medium', color: 'bg-emerald-50 text-[#245C3A] border-emerald-200' };
+    const phClass = classifyLive('ph', ph) || { label: 'Neutral', color: 'bg-emerald-50 text-[#245C3A] border-emerald-200' };
+    const ocClass = classifyLive('organicCarbon', oc) || { label: 'Medium', color: 'bg-emerald-50 text-[#245C3A] border-emerald-200' };
+    const ecClass = classifyLive('ec', ec) || { label: 'Normal', color: 'bg-emerald-50 text-[#245C3A] border-emerald-200' };
 
     // Calculate score
     const healthScore = Math.min(Math.max(Math.round((n / 350) * 20 + (p / 22) * 20 + (k / 240) * 20 + (oc / 0.75) * 20 + (20 - Math.abs(ph - 7) * 8)), 35), 98);
@@ -313,16 +358,19 @@ export default function SoilUploadModal() {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-lg font-black">
-                  {modalStep === 'validation' ? "Validate & Confirm Soil Data" : "Upload Soil Health Card"}
+                  {modalStep === 'validation' ? "Validate & Confirm Soil Data" : (modalStep === 'error' ? "Extraction Error" : "Upload Soil Health Card")}
                 </h3>
                 <span className="text-[10px] uppercase font-bold bg-[#E8F0E7] text-[#245C3A] px-2 py-0.5 rounded-full">
-                  {modalStep === 'validation' ? "Step 2 of 2" : "Step 1 of 2"}
+                  {modalStep === 'validation' ? "Step 2 of 2" : (modalStep === 'error' ? "Notice" : "Step 1 of 2")}
                 </span>
               </div>
               <p className="text-emerald-100 text-xs mt-0.5">
                 {modalStep === 'validation' 
                   ? "Verify extracted values. Correct any inaccuracies or missing items below." 
-                  : "Supports PDF, JPG, JPEG, and PNG soil testing documents."
+                  : (modalStep === 'error'
+                      ? "Unable to extract data from this file."
+                      : "Supports PDF, JPG, JPEG, and PNG soil testing documents."
+                    )
                 }
               </p>
             </div>
@@ -349,7 +397,7 @@ export default function SoilUploadModal() {
                   e.preventDefault();
                   setDragActive(false);
                   if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                    setSelectedFile(e.dataTransfer.files[0]);
+                    handleFileSelection(e.dataTransfer.files[0]);
                   }
                 }}
                 className={`border-2 border-dashed rounded-2xl p-6 sm:p-8 text-center transition-all ${
@@ -406,6 +454,14 @@ export default function SoilUploadModal() {
                   </div>
                 )}
               </div>
+
+              {/* Inline File Validation Error Message */}
+              {fileError && (
+                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+                  <span>{fileError}</span>
+                </div>
+              )}
 
               {/* Start Extraction button */}
               {selectedFile && (
@@ -490,6 +546,44 @@ export default function SoilUploadModal() {
                   className="bg-[#245C3A] h-full transition-all duration-500 rounded-full"
                   style={{ width: `${((processingStep + 1) / extractionSteps.length) * 100}%` }}
                 ></div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP: ERROR SCREEN */}
+          {modalStep === 'error' && (
+            <div className="py-10 px-4 text-center space-y-6">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-amber-50 text-amber-700 border border-amber-200 flex items-center justify-center">
+                <AlertCircle className="w-8 h-8" />
+              </div>
+
+              <div className="space-y-2 max-w-md mx-auto">
+                <h4 className="text-base font-bold text-[#26332B]">
+                  Extraction Failed
+                </h4>
+                <p className="text-sm text-[#5C6E63]">
+                  Could not read this card. Check your connection or enter values manually
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={handleTryAgain}
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-[#E2EBE2] hover:bg-[#F8FAF7] text-[#26332B] font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer"
+                >
+                  <RotateCcw className="w-4 h-4 text-[#5C6E63]" />
+                  <span>Try again</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleEnterManually}
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#245C3A] hover:bg-[#1B462C] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition cursor-pointer"
+                >
+                  <Edit3 className="w-4 h-4" />
+                  <span>Enter values manually</span>
+                </button>
               </div>
             </div>
           )}
