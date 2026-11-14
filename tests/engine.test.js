@@ -11,6 +11,7 @@ import {
   classifyLive,
   calculateFertilizerPlan,
   analyzeSoil,
+  formatSoilReportText,
 } from '../src/engine/icarEngine.js';
 
 import {
@@ -220,5 +221,66 @@ test('Offline Dynamic Answer Generation in 3 Languages', async (t) => {
     const enDef = answerOffline('random question without keywords', 'en', dynamicReport, 'John');
     assert.ok(enDef.includes('John'));
     assert.ok(enDef.includes('195 kg/ha'));
+  });
+});
+
+test('Plain Text Soil Report Generator for WhatsApp & FPO Advisory', async (t) => {
+  const sampleReport = {
+    farmerName: 'రామయ్య (Ramayya)',
+    location: 'నల్గొండ (Nalgonda)',
+    sampleDate: '12-Nov-2026',
+    nutrients: {
+      nitrogen: { value: 165 },
+      phosphorus: { value: 14.2 },
+      potassium: { value: 120 },
+    },
+    ph: { value: 7.8 },
+    organicCarbon: { value: 0.35 },
+    secondaryNutrients: { zinc: { value: 0.42 } },
+  };
+
+  await t.test('Telugu WhatsApp report generation meets length and content requirements', () => {
+    const text = formatSoilReportText(sampleReport, { lang: 'te' });
+
+    assert.ok(text.length < 1500, `Telugu report must be < 1500 chars (was ${text.length})`);
+    assert.ok(text.length > 200, 'Report text should not be empty');
+    assert.ok(text.includes('రామయ్య'), 'Should contain farmer name');
+    assert.ok(text.includes('నల్గొండ'), 'Should contain village name');
+    assert.ok(text.includes('12-Nov-2026'), 'Should contain report date');
+    assert.ok(text.includes('165 kg/ha'), 'Should contain nitrogen level');
+    assert.ok(text.includes('14.2 kg/ha'), 'Should contain phosphorus level');
+    assert.ok(text.includes('120 kg/ha'), 'Should contain potassium level');
+    assert.ok(text.includes('యూరియా'), 'Should mention Urea in fertilizer plan');
+    assert.ok(text.includes('బస్తాలు'), 'Should mention bags per acre');
+    assert.ok(text.includes('ICAR Soil Health Card standards'), 'Must contain ICAR disclaimer');
+  });
+
+  await t.test('Hindi WhatsApp report generation meets length and content requirements', () => {
+    const text = formatSoilReportText(sampleReport, { lang: 'hi', farmerName: 'राजेश पटेल', village: 'इंदौर' });
+
+    assert.ok(text.length < 1500, `Hindi report must be < 1500 chars (was ${text.length})`);
+    assert.ok(text.includes('राजेश पटेल'), 'Should contain farmer name');
+    assert.ok(text.includes('इंदौर'), 'Should contain village name');
+    assert.ok(text.includes('165 kg/ha'), 'Should contain nitrogen value');
+    assert.ok(text.includes('बोरी'), 'Should mention bags in Hindi');
+    assert.ok(text.includes('यूरिया'), 'Should mention urea in Hindi');
+    assert.ok(text.includes('ICAR Soil Health Card standards'), 'Must contain ICAR disclaimer');
+  });
+
+  await t.test('English WhatsApp report generation meets length and content requirements', () => {
+    const text = formatSoilReportText(sampleReport, { lang: 'en', farmerName: 'Ramesh Patel', village: 'Kadapa' });
+
+    assert.ok(text.length < 1500, `English report must be < 1500 chars (was ${text.length})`);
+    assert.ok(text.includes('Ramesh Patel'), 'Should contain farmer name');
+    assert.ok(text.includes('Kadapa'), 'Should contain village name');
+    assert.ok(text.includes('165 kg/ha'), 'Should contain nitrogen value');
+    assert.ok(text.includes('Bags'), 'Should specify fertilizer bags');
+    assert.ok(text.includes('Ratings follow ICAR Soil Health Card standards.'), 'Must contain exact ICAR disclaimer');
+  });
+
+  await t.test('Handles empty/missing report gracefully without hardcoded numbers or errors', () => {
+    const text = formatSoilReportText(null, { lang: 'en' });
+    assert.ok(text.length < 1500);
+    assert.ok(text.includes('Ratings follow ICAR Soil Health Card standards.'));
   });
 });

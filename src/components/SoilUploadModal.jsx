@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   X, 
@@ -19,6 +19,7 @@ import { useSoil } from '../context/SoilContext';
 import { SAMPLE_SOIL_REPORTS } from '../data/sampleSoilReports';
 import { api } from '../services/api';
 import { classifyLive, analyzeSoil } from '../engine/icarEngine';
+import WhatsAppShareReport from './WhatsAppShareReport';
 
 export default function SoilUploadModal() {
   const { isUploadModalOpen, setIsUploadModalOpen, addReport } = useSoil();
@@ -56,6 +57,28 @@ export default function SoilUploadModal() {
 
   // Track which parameters were missing from the document
   const [missingFlags, setMissingFlags] = useState({});
+
+  const validationReport = useMemo(() => {
+    return {
+      title: reportTitle,
+      farmerName: 'Farmer',
+      location: 'Local Farm',
+      nutrients: {
+        nitrogen: { value: parseFloat(params.nitrogen) || 0, unit: 'kg/ha' },
+        phosphorus: { value: parseFloat(params.phosphorus) || 0, unit: 'kg/ha' },
+        potassium: { value: parseFloat(params.potassium) || 0, unit: 'kg/ha' }
+      },
+      ph: { value: parseFloat(params.ph) || 7.0 },
+      organicCarbon: { value: parseFloat(params.organicCarbon) || 0, unit: '%' },
+      ec: { value: parseFloat(params.ec) || 0, unit: 'dS/m' },
+      secondaryNutrients: {
+        zinc: { value: parseFloat(params.zinc) || 0, unit: 'ppm' },
+        sulphur: { value: parseFloat(params.sulphur) || 0, unit: 'ppm' },
+        iron: { value: parseFloat(params.iron) || 5.4, unit: 'ppm' },
+        boron: { value: parseFloat(params.boron) || 0.52, unit: 'ppm' }
+      }
+    };
+  }, [reportTitle, params]);
 
   if (!isUploadModalOpen) return null;
 
@@ -902,6 +925,11 @@ export default function SoilUploadModal() {
                   </div>
 
                 </div>
+              </div>
+
+              {/* FPO WhatsApp Report Sharing & Voice Advisory */}
+              <div className="pt-2">
+                <WhatsAppShareReport report={validationReport} />
               </div>
 
               {/* Action Buttons */}

@@ -28,6 +28,7 @@ import {
   Legend 
 } from 'recharts';
 import { useSoil } from '../context/SoilContext';
+import WhatsAppShareReport from '../components/WhatsAppShareReport';
 
 export default function SoilAnalysisPage() {
   const { reports, activeReport, setActiveReportId, setIsUploadModalOpen } = useSoil();
@@ -164,6 +165,9 @@ export default function SoilAnalysisPage() {
           </div>
         </div>
       </div>
+
+      {/* FPO WhatsApp Report Sharing & Voice Advisory */}
+      <WhatsAppShareReport report={activeReport} />
 
       {/* SECTION 1: Primary Macronutrients (NPK) with Chart & Detailed Metric Cards */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E2EBE2] shadow-xs space-y-6">

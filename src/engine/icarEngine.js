@@ -898,3 +898,177 @@ export function analyzeSoil(report) {
     values: vals,
   };
 }
+
+// ==============================================================================
+// 8. PLAIN TEXT REPORT GENERATOR (WHATSAPP & COPY ADVISORY)
+// ==============================================================================
+export function formatSoilReportText(report, options = {}) {
+  const analysis = analyzeSoil(report);
+  const lang = ['te', 'hi', 'en'].includes(options.lang) ? options.lang : 'en';
+
+  const farmerName = options.farmerName || report?.farmerName || report?.farmer?.name || report?.extracted_soil_data?.farmerName || (lang === 'te' ? 'రైతు' : (lang === 'hi' ? 'किसान' : 'Farmer'));
+  const village = options.village || report?.location || report?.village || report?.extracted_soil_data?.village || (lang === 'te' ? 'గ్రామం' : (lang === 'hi' ? 'गांव' : 'Local Village'));
+  const reportDate = options.reportDate || report?.sampleDate || report?.date || new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  const healthScore = analysis.healthScore;
+
+  const vals = analysis.values;
+  const plan = analysis.fertilizerPlan;
+  const defs = analysis.deficiencies;
+  const crops = analysis.cropSuggestions.slice(0, 3);
+
+  const translateRating = (ratingStr) => {
+    const raw = String(ratingStr || '').toLowerCase();
+    if (lang === 'te') {
+      if (raw.includes('low') || raw.includes('deficient')) return 'తక్కువ (లోపం)';
+      if (raw.includes('high') || raw.includes('sufficient')) return 'ఎక్కువ (సమృద్ధి)';
+      if (raw.includes('medium') || raw.includes('optimal')) return 'మధ్యస్థం (సహజం)';
+      if (raw.includes('acid')) return 'ఆమ్ల గుణం';
+      if (raw.includes('alkal')) return 'క్షార గుణం';
+      if (raw.includes('neutral')) return 'తటస్థం';
+      return ratingStr || 'సాధారణం';
+    }
+    if (lang === 'hi') {
+      if (raw.includes('low') || raw.includes('deficient')) return 'कम (कमी)';
+      if (raw.includes('high') || raw.includes('sufficient')) return 'अधिक (प्रचुर)';
+      if (raw.includes('medium') || raw.includes('optimal')) return 'मध्यम (संतुलित)';
+      if (raw.includes('acid')) return 'अम्लीय';
+      if (raw.includes('alkal')) return 'क्षारीय';
+      if (raw.includes('neutral')) return 'सामान्य (तटस्थ)';
+      return ratingStr || 'संतुलित';
+    }
+    return ratingStr || 'Optimal';
+  };
+
+  const phLabel = translateRating(analysis.ratings.ph.label);
+  const nLabel = translateRating(analysis.ratings.nitrogen.label);
+  const pLabel = translateRating(analysis.ratings.phosphorus.label);
+  const kLabel = translateRating(analysis.ratings.potassium.label);
+  const ocLabel = translateRating(analysis.ratings.organicCarbon.label);
+  const znLabel = translateRating(analysis.ratings.zinc.label);
+
+  if (lang === 'te') {
+    const localizeDefTe = (d) => {
+      if (d.key === 'nitrogen') return '• నత్రజని (N): తక్కువ (<280 kg/ha)';
+      if (d.key === 'phosphorus') return '• భాస్వరం (P): తక్కువ (<11 kg/ha)';
+      if (d.key === 'potassium') return '• పొటాష్ (K): తక్కువ (<135 kg/ha)';
+      if (d.key === 'zinc') return '• జింక్ (Zn): లోపం (<0.60 ppm)';
+      if (d.key === 'organicCarbon') return '• సేంద్రీయ కర్బనం (OC): తక్కువ (<0.50%)';
+      if (d.key === 'sulphur') return '• గంధకం / సల్ఫర్ (S): తక్కువ (<10 ppm)';
+      if (d.key === 'ph') return `• నేల pH: ${translateRating(d.status)}`;
+      return `• ${d.name}: ${d.status}`;
+    };
+
+    const topDefs = defs.length > 0
+      ? defs.map(localizeDefTe).join('\n')
+      : '• ప్రధాన లోపాలు లేవు (పోషకాలు సమతుల్యంగా ఉన్నాయి)';
+
+    const cropList = crops.map(c => `• ${c.localTe || c.crop} (${c.suitability}% అనుకూలత)`).join('\n');
+    const pName = plan.phosphorusSource.fertilizer.includes('SSP') ? 'SSP' : 'DAP';
+
+    return `🌾 *కృషిసాథి - నేల ఆరోగ్య నివేదిక*
+👤 రైతు: ${farmerName} | గ్రామం: ${village}
+📅 తేదీ: ${reportDate}
+🏆 నేల ఆరోగ్య స్కోర్: ${healthScore}/100
+
+📊 *పోషకాల స్థాయిలు:*
+• pH: ${vals.ph ?? 'N/A'} (${phLabel})
+• నత్రజని (N): ${vals.n ?? 'N/A'} kg/ha (${nLabel})
+• భాస్వరం (P): ${vals.p ?? 'N/A'} kg/ha (${pLabel})
+• పొటాష్ (K): ${vals.k ?? 'N/A'} kg/ha (${kLabel})
+• సేంద్రీయ కర్బనం (OC): ${vals.oc ?? 'N/A'}% (${ocLabel})
+• జింక్ (Zn): ${vals.zn ?? 'N/A'} ppm (${znLabel})
+
+⚠️ *ప్రధాన లోపాలు:*
+${topDefs}
+
+📦 *ఎకరాకు సిఫార్సు చేసిన ఎరువులు (బస్తాలు):*
+• యూరియా: ~${plan.urea.bagsPerAcre} బస్తాలు (45kg)
+• ${pName}: ~${plan.phosphorusSource.bagsPerAcre} బస్తాలు (50kg)
+• పొటాష్ (MOP): ~${plan.mop.bagsPerAcre} బస్తాలు (50kg)
+${plan.zinc ? `• జింక్ సల్ఫేట్: 10 kg/ఎకరాకు (DAP తో కలపవద్దు)\n` : ''}
+🌱 *అనుకూలమైన పంటలు:*
+${cropList}
+
+ℹ️ Ratings follow ICAR Soil Health Card standards. (ICAR ప్రమాణాల ఆధారంగా రూపొందించబడింది)`;
+  }
+
+  if (lang === 'hi') {
+    const localizeDefHi = (d) => {
+      if (d.key === 'nitrogen') return '• नाइट्रोजन (N): कम (<280 kg/ha)';
+      if (d.key === 'phosphorus') return '• फास्फोरस (P): कम (<11 kg/ha)';
+      if (d.key === 'potassium') return '• पोटाश (K): कम (<135 kg/ha)';
+      if (d.key === 'zinc') return '• जिंक (Zn): कमी (<0.60 ppm)';
+      if (d.key === 'organicCarbon') return '• जैविक कार्बन (OC): कम (<0.50%)';
+      if (d.key === 'sulphur') return '• सल्फर (S): कम (<10 ppm)';
+      if (d.key === 'ph') return `• मिट्टी pH: ${translateRating(d.status)}`;
+      return `• ${d.name}: ${d.status}`;
+    };
+
+    const topDefs = defs.length > 0
+      ? defs.map(localizeDefHi).join('\n')
+      : '• कोई गंभीर कमी नहीं (पोषक तत्व संतुलित हैं)';
+
+    const cropList = crops.map(c => `• ${c.localHi || c.crop} (${c.suitability}% उपयुक्तता)`).join('\n');
+    const pName = plan.phosphorusSource.fertilizer.includes('SSP') ? 'SSP' : 'DAP';
+
+    return `🌾 *कृषिशाथी - मृदा स्वास्थ्य कार्ड रिपोर्ट*
+👤 किसान: ${farmerName} | गांव: ${village}
+📅 दिनांक: ${reportDate}
+🏆 मृदा स्वास्थ्य स्कोर: ${healthScore}/100
+
+📊 *पोषक तत्व स्तर:*
+• pH: ${vals.ph ?? 'N/A'} (${phLabel})
+• नाइट्रोजन (N): ${vals.n ?? 'N/A'} kg/ha (${nLabel})
+• फास्फोरस (P): ${vals.p ?? 'N/A'} kg/ha (${pLabel})
+• पोटाश (K): ${vals.k ?? 'N/A'} kg/ha (${kLabel})
+• जैविक कार्बन (OC): ${vals.oc ?? 'N/A'}% (${ocLabel})
+• जिंक (Zn): ${vals.zn ?? 'N/A'} ppm (${znLabel})
+
+⚠️ *मुख्य कमियां:*
+${topDefs}
+
+📦 *प्रति एकड़ अनुशंसित उर्वरक (बोरी):*
+• नीम यूरिया: ~${plan.urea.bagsPerAcre} बोरी (45kg)
+• ${pName}: ~${plan.phosphorusSource.bagsPerAcre} बोरी (50kg)
+• पोटाश (MOP): ~${plan.mop.bagsPerAcre} बोरी (50kg)
+${plan.zinc ? `• जिंक सल्फेट: 10 kg/एकड़ (डीएपी के साथ न मिलाएं)\n` : ''}
+🌱 *अनुशंसित फसलें:*
+${cropList}
+
+ℹ️ Ratings follow ICAR Soil Health Card standards. (ICAR मानकों के अनुसार)`;
+  }
+
+  // English default
+  const topDefs = defs.length > 0
+    ? defs.map(d => `• ${d.name}: ${d.status}`).join('\n')
+    : '• No severe deficiencies (Nutrient profile is balanced)';
+
+  const cropList = crops.map(c => `• ${c.crop} (${c.suitability}% match)`).join('\n');
+  const pName = plan.phosphorusSource.fertilizer.includes('SSP') ? 'SSP' : 'DAP';
+
+  return `🌾 *KrishiSaathi - Soil Health Card Report*
+👤 Farmer: ${farmerName} | Village: ${village}
+📅 Date: ${reportDate}
+🏆 Soil Health Score: ${healthScore}/100
+
+📊 *Nutrient Levels:*
+• pH: ${vals.ph ?? 'N/A'} (${phLabel})
+• Nitrogen (N): ${vals.n ?? 'N/A'} kg/ha (${nLabel})
+• Phosphorus (P): ${vals.p ?? 'N/A'} kg/ha (${pLabel})
+• Potassium (K): ${vals.k ?? 'N/A'} kg/ha (${kLabel})
+• Organic Carbon (OC): ${vals.oc ?? 'N/A'}% (${ocLabel})
+• Zinc (Zn): ${vals.zn ?? 'N/A'} ppm (${znLabel})
+
+⚠️ *Top Deficiencies:*
+${topDefs}
+
+📦 *Recommended Fertilizers per Acre (Bags):*
+• Neem Urea: ~${plan.urea.bagsPerAcre} Bags (45kg)
+• ${pName}: ~${plan.phosphorusSource.bagsPerAcre} Bags (50kg)
+• Potash (MOP): ~${plan.mop.bagsPerAcre} Bags (50kg)
+${plan.zinc ? `• Zinc Sulphate (21%): 10 kg/acre (DO NOT mix with DAP)\n` : ''}
+🌱 *Recommended Crops:*
+${cropList}
+
+ℹ️ Ratings follow ICAR Soil Health Card standards.`;
+}
