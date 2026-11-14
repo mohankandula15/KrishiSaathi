@@ -31,12 +31,15 @@ export default function MyFarmPage() {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-[#E2EBE2]">
           
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-[#245C3A] bg-[#E8F0E7] px-3 py-1 rounded-full border border-[#D4E3D3]">
                 {t('myFarm.farmDetails', 'Farm Management')}
               </span>
               <span className="text-xs bg-[#F8FAF7] text-[#5C6E63] font-mono px-2.5 py-0.5 rounded-full border border-[#E2EBE2]">
                 {t('common.farmer', 'Farmer')} ID: {user?.id || "DEMO-001"}
+              </span>
+              <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-200 px-2 py-0.5 rounded-full font-medium">
+                {t('common.prototypeDemo', 'Prototype - demo data')}
               </span>
             </div>
 
@@ -73,7 +76,12 @@ export default function MyFarmPage() {
         {/* Key Metrics Strip */}
         <div className="pt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
           <div className="p-4 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2]">
-            <span className="text-[#5C6E63] block text-[11px]">{t('myFarm.totalAcreage', 'Cultivated Area')}</span>
+            <div className="flex items-center justify-between">
+              <span className="text-[#5C6E63] block text-[11px]">{t('myFarm.totalAcreage', 'Cultivated Area')}</span>
+              <span className="text-[9px] bg-amber-100 text-amber-900 border border-amber-200 px-1 py-0.2 rounded font-medium">
+                {t('common.prototypeDemo', 'Prototype - demo data')}
+              </span>
+            </div>
             <p className="text-xl font-black text-[#26332B] mt-0.5">{farmSize}</p>
             <p className="text-[10px] text-[#5C6E63] mt-0.5">{t('myFarm.activeParcelsCount', '2 Active Field Parcels')}</p>
           </div>
@@ -85,7 +93,12 @@ export default function MyFarmPage() {
           </div>
 
           <div className="p-4 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2]">
-            <span className="text-[#5C6E63] block text-[11px]">{t('myFarm.primaryCrops', 'Primary Crops')}</span>
+            <div className="flex items-center justify-between">
+              <span className="text-[#5C6E63] block text-[11px]">{t('myFarm.primaryCrops', 'Primary Crops')}</span>
+              <span className="text-[9px] bg-amber-100 text-amber-900 border border-amber-200 px-1 py-0.2 rounded font-medium">
+                {t('common.prototypeDemo', 'Prototype - demo data')}
+              </span>
+            </div>
             <p className="text-xl font-black text-[#26332B] mt-0.5">{primaryCrop}</p>
             <p className="text-[10px] text-[#5C6E63] mt-0.5">{t('myFarm.cropCycle', 'Rabi / Kharif Cycle')}</p>
           </div>
@@ -111,9 +124,14 @@ export default function MyFarmPage() {
               {t('myFarm.parcelsSubtitle', 'Individual plots registered under your farmer survey credentials')}
             </p>
           </div>
-          <span className="text-xs font-bold text-[#245C3A] bg-[#E8F0E7] px-3 py-1 rounded-full">
-            {t('myFarm.plotsCount', '2 Plots')}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-[#245C3A] bg-[#E8F0E7] px-3 py-1 rounded-full">
+              {t('myFarm.plotsCount', '2 Plots')}
+            </span>
+            <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-200 px-2 py-0.5 rounded-full font-medium">
+              {t('common.prototypeDemo', 'Prototype - demo data')}
+            </span>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

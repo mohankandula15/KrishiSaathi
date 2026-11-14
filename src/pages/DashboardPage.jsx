@@ -140,8 +140,13 @@ export default function DashboardPage() {
         <div className="mt-6 pt-6 border-t border-[#E2EBE2] grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
           <div className="flex items-center gap-3 p-3 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2]">
             <CloudSun className="w-6 h-6 text-amber-700 shrink-0" />
-            <div>
-              <p className="font-bold text-[#26332B]">{t("dashboard.weatherClear", "Weather: 24°C • Clear Sky")}</p>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <p className="font-bold text-[#26332B] truncate">{t("dashboard.weatherClear", "Weather: 24°C • Clear Sky")}</p>
+                <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-200 px-1.5 py-0.2 rounded font-medium shrink-0">
+                  {t('common.prototypeDemo', 'Prototype - demo data')}
+                </span>
+              </div>
               <p className="text-[#5C6E63] text-[11px]">{t("dashboard.weatherSub", "Humidity: 58% • Rain Probability: 5%")}</p>
             </div>
           </div>

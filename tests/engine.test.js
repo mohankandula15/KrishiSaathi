@@ -524,4 +524,56 @@ test('i18n Translation Integrity & Units Preservation', async (t) => {
     assert.equal(demoMetaPunjab.labName, 'జిల్లా నేల పరీక్ష ప్రయోగశాల, PAU క్యాంపస్, లూధియానా');
     assert.equal(getDemoCardMeta(customUserReport, tTe), null);
   });
+
+  await t.test('Landing page honesty fixes: truthful stats, built for FPOs, neutral CTA, and prototype demo tags', () => {
+    // 1. Truthful stats items
+    assert.equal(en.landing.stats.item1Title, 'ICAR-based analysis');
+    assert.equal(en.landing.stats.item2Title, '3 Languages');
+    assert.equal(en.landing.stats.item3Title, 'Works offline');
+    assert.ok(en.landing.stats.item2Sub.includes('English, Hindi, Telugu'));
+
+    // Check Telugu and Hindi stats
+    assert.equal(te.landing.stats.item1Title, 'ICAR-ఆధారిత విశ్లేషణ');
+    assert.equal(te.landing.stats.item2Title, '3 భాషలు');
+    assert.equal(te.landing.stats.item3Title, 'ఆఫ్‌లైన్‌లో పనిచేస్తుంది');
+
+    assert.equal(hi.landing.stats.item1Title, 'ICAR-आधारित विश्लेषण');
+    assert.equal(hi.landing.stats.item2Title, '3 भाषाएं');
+    assert.equal(hi.landing.stats.item3Title, 'ऑफ़लाइन काम करता है');
+
+    // Verify inflated numbers are removed
+    const landingStrEn = JSON.stringify(en.landing);
+    const landingStrTe = JSON.stringify(te.landing);
+    const landingStrHi = JSON.stringify(hi.landing);
+
+    assert.ok(!landingStrEn.includes('120,000+'));
+    assert.ok(!landingStrTe.includes('120,000+'));
+    assert.ok(!landingStrHi.includes('120,000+'));
+
+    assert.ok(!landingStrEn.includes('3,500'));
+    assert.ok(!landingStrTe.includes('3,500'));
+    assert.ok(!landingStrHi.includes('3,500'));
+
+    assert.ok(!landingStrEn.includes('Gurpreet'));
+    assert.ok(!landingStrTe.includes('గుర్‌ప్రీత్'));
+    assert.ok(!landingStrHi.includes('गुरप्रीत'));
+
+    // 2. Built for FPOs section
+    assert.equal(en.landing.fpo.badge, 'Built for FPOs');
+    assert.ok(en.landing.fpo.desc.includes('FPO staff scan'));
+    assert.ok(te.landing.fpo.desc.includes('FPO'));
+    assert.ok(hi.landing.fpo.desc.includes('FPO'));
+
+    // 3. Neutral CTAs and headlines
+    assert.equal(en.landing.bottomCta.registerBtn, 'Create account');
+    assert.equal(te.landing.bottomCta.registerBtn, 'ఖాతాను సృష్టించండి');
+    assert.equal(hi.landing.bottomCta.registerBtn, 'खाता बनाएं');
+
+    assert.ok(!en.landing.heroTitleHighlight.includes('Earn More'));
+
+    // 4. Prototype demo data labels
+    assert.equal(en.common.prototypeDemo, 'Prototype - demo data');
+    assert.equal(te.common.prototypeDemo, 'ప్రోటోటైప్ - డెమో డేటా');
+    assert.equal(hi.common.prototypeDemo, 'प्रोटोटाइप - डेमो डेटा');
+  });
 });

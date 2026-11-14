@@ -25,6 +25,7 @@
     "viewDetails": "View Details",
     "disclaimer": "Ratings follow ICAR Soil Health Card standards.",
     "soil": "Soil",
+    "prototypeDemo": "Prototype - demo data",
     "comingSoon": "Coming soon",
     "fieldReport": "Field Report",
     "active": "Active",
@@ -413,7 +414,7 @@
   "landing": {
     "heroTag": "AI-Powered Soil Health Intelligence & Advisory",
     "heroTitle": "Understand Your Soil.",
-    "heroTitleHighlight": "Grow Better. Earn More.",
+    "heroTitleHighlight": "Grow Better Crops. Balanced Nutrition.",
     "heroSubtitle": "KrishiSaathi empowers farmers to unlock the true potential of their land with tailored agronomic insights.",
     "ctaUpload": "Upload Soil Report",
     "ctaDemo": "Get Started",
@@ -421,12 +422,12 @@
     "featuresTitle": "Built for Indian Farmers & FPOs",
     "featuresSubtitle": "End-to-end soil intelligence that works both online and offline in rural areas.",
     "stats": {
-      "cardsAnalyzed": "Soil Cards Analyzed",
-      "savings": "Average Input Savings",
-      "languages": "AI Voice Assistant",
-      "languagesCount": "10+ Languages",
-      "savingsValue": "₹3,500/acre",
-      "cardsCount": "120,000+"
+      "item1Title": "ICAR-based analysis",
+      "item1Sub": "Scientific soil standards",
+      "item2Title": "3 Languages",
+      "item2Sub": "English, Hindi, Telugu (more coming)",
+      "item3Title": "Works offline",
+      "item3Sub": "In-browser ICAR engine"
     },
     "preview": {
       "badge": "Live AI Preview",
@@ -496,18 +497,21 @@
       "point3Desc": "Voice-guided AI allows farmers to speak their doubts and receive spoken audio replies.",
       "viewSample": "View Sample Analysis"
     },
-    "testimonials": {
-      "quote1": "\"Previously, we used to apply 4 bags of urea per acre indiscriminately. When we scanned our soil card with KrishiSaathi, we discovered our potash was already high and nitrogen was lacking. We saved ₹4,200 on inputs and saw higher wheat yields!\"",
-      "author1": "Gurpreet Singh",
-      "role1": "Ludhiana, Punjab • 12 Acres",
-      "quote2": "\"Using the voice assistant in my regional language made everything straightforward. The app identified acute zinc deficiency in my black soil before cotton sowing, and the recommended spray saved our harvest.\"",
-      "author2": "Suresh Patil",
-      "role2": "Baramati, Maharashtra • 6 Acres"
+    "fpo": {
+      "badge": "Built for FPOs",
+      "title": "Field-Tested Workflow for FPOs & Agri Staff",
+      "desc": "FPO staff scan the farmer's Soil Health Card, the farmer listens to the plan in his own language, and a text report can be sent on WhatsApp.",
+      "step1Title": "Scan Card",
+      "step1Desc": "Digitize lab values with OCR",
+      "step2Title": "Voice Advisory",
+      "step2Desc": "Farmer listens in local language",
+      "step3Title": "WhatsApp Report",
+      "step3Desc": "Share text summary instantly"
     },
     "bottomCta": {
-      "title": "Understand Your Soil & Maximize Yield Today",
+      "title": "Understand Your Soil & Optimize Crop Nutrition",
       "subtitle": "Experience the power of precision agronomy with KrishiSaathi.",
-      "registerBtn": "Register Free Account"
+      "registerBtn": "Create account"
     }
   },
   "assistant": {

@@ -11,15 +11,17 @@ import {
   Mic, 
   FileCheck, 
   Droplets, 
-  ChevronRight
+  ChevronRight,
+  Users
 } from 'lucide-react';
 import { useSoil } from '../context/SoilContext';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { getCardDisplayName, getTranslatedRating } from '../i18n/dataLookups';
 
 export default function LandingPage() {
   const { t } = useTranslation();
-  const { setIsUploadModalOpen } = useSoil();
+  const { activeReport, setIsUploadModalOpen } = useSoil();
   const { user } = useAuth();
 
   return (
@@ -45,7 +47,7 @@ export default function LandingPage() {
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-tight">
                 {t('landing.heroTitle', 'Understand Your Soil.')} <br className="hidden sm:inline" />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-green-200 to-amber-300">
-                  {t('landing.heroTitleHighlight', 'Grow Better. Earn More.')}
+                  {t('landing.heroTitleHighlight', 'Grow Better Crops. Balanced Nutrition.')}
                 </span>
               </h1>
 
@@ -72,19 +74,19 @@ export default function LandingPage() {
                 </button>
               </div>
 
-              {/* Trust Badges */}
-              <div className="pt-4 grid grid-cols-3 gap-4 border-t border-emerald-700/60 max-w-lg mx-auto lg:mx-0 text-left">
+              {/* Truthful Platform Highlights */}
+              <div className="pt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-emerald-700/60 max-w-xl mx-auto lg:mx-0 text-left">
                 <div>
-                  <p className="text-2xl font-black text-white">{t('landing.stats.cardsCount', '120,000+')}</p>
-                  <p className="text-xs text-emerald-200 font-medium">{t('landing.stats.cards', 'Soil Cards Analyzed')}</p>
+                  <p className="text-base font-black text-white">{t('landing.stats.item1Title', 'ICAR-based analysis')}</p>
+                  <p className="text-xs text-emerald-200 font-medium">{t('landing.stats.item1Sub', 'Scientific soil standards')}</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-black text-amber-300">{t('landing.stats.savingsValue', '₹3,500/acre')}</p>
-                  <p className="text-xs text-emerald-200 font-medium">{t('landing.stats.savings', 'Average Input Savings')}</p>
+                  <p className="text-base font-black text-amber-300">{t('landing.stats.item2Title', '3 Languages')}</p>
+                  <p className="text-xs text-emerald-200 font-medium">{t('landing.stats.item2Sub', 'English, Hindi, Telugu (more coming)')}</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-black text-white">{t('landing.stats.languagesCount', '10+ Languages')}</p>
-                  <p className="text-xs text-emerald-200 font-medium">{t('landing.stats.languages', 'AI Voice Assistant')}</p>
+                  <p className="text-base font-black text-white">{t('landing.stats.item3Title', 'Works offline')}</p>
+                  <p className="text-xs text-emerald-200 font-medium">{t('landing.stats.item3Sub', 'In-browser ICAR engine')}</p>
                 </div>
               </div>
             </div>
@@ -102,12 +104,16 @@ export default function LandingPage() {
                       <FileCheck className="w-6 h-6" />
                     </div>
                     <div>
-                      <h4 className="font-black text-stone-900 text-sm">{t('landing.preview.cardTitle', 'Soil Health Card')}</h4>
-                      <p className="text-xs text-stone-500">{t('landing.preview.cardId', 'Card ID')}: SHC-PB-2025-0891</p>
+                      <h4 className="font-black text-stone-900 text-sm truncate max-w-[200px]">
+                        {getCardDisplayName(activeReport, t)}
+                      </h4>
+                      <p className="text-xs text-stone-500 font-mono">
+                        {t('landing.preview.cardId', 'Card ID')}: {activeReport?.cardNumber || activeReport?.id || 'SHC-PB-2025-0891'}
+                      </p>
                     </div>
                   </div>
                   <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black">
-                    {t('landing.preview.score', 'Score: 74/100')}
+                    {t('common.score', 'Score')}: {activeReport?.healthScore || 74}/100
                   </span>
                 </div>
 
@@ -115,7 +121,9 @@ export default function LandingPage() {
                   <div className="bg-stone-50 p-3 rounded-2xl flex items-center justify-between">
                     <div>
                       <span className="text-xs font-bold text-stone-500">{t('nutrients.nitrogen', 'Nitrogen (N)')}</span>
-                      <p className="text-sm font-black text-red-600">{t('landing.preview.nVal', '185 kg/ha • Low')}</p>
+                      <p className="text-sm font-black text-red-600">
+                        {activeReport?.nutrients?.nitrogen?.value || 185} kg/ha • {getTranslatedRating(activeReport?.nutrients?.nitrogen?.rating || 'Low', t)}
+                      </p>
                     </div>
                     <span className="text-xs font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-lg">
                       {t('landing.preview.nAction', 'Urea 2.2 bags/acre')}
@@ -125,7 +133,9 @@ export default function LandingPage() {
                   <div className="bg-stone-50 p-3 rounded-2xl flex items-center justify-between">
                     <div>
                       <span className="text-xs font-bold text-stone-500">{t('nutrients.potassium', 'Potassium (K₂O)')}</span>
-                      <p className="text-sm font-black text-emerald-700">{t('landing.preview.kVal', '295 kg/ha • Sufficient')}</p>
+                      <p className="text-sm font-black text-emerald-700">
+                        {activeReport?.nutrients?.potassium?.value || 295} kg/ha • {getTranslatedRating(activeReport?.nutrients?.potassium?.rating || 'High', t)}
+                      </p>
                     </div>
                     <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-lg">
                       {t('landing.preview.kAction', 'Reduce MOP by 50%')}
@@ -135,7 +145,9 @@ export default function LandingPage() {
                   <div className="bg-stone-50 p-3 rounded-2xl flex items-center justify-between">
                     <div>
                       <span className="text-xs font-bold text-stone-500">{t('nutrients.ph', 'Soil pH')}</span>
-                      <p className="text-sm font-black text-stone-800">{t('landing.preview.phVal', '7.2 • Optimal Neutral')}</p>
+                      <p className="text-sm font-black text-stone-800">
+                        {activeReport?.ph?.value || 7.2} • {getTranslatedRating(activeReport?.ph?.rating || 'Neutral', t)}
+                      </p>
                     </div>
                     <span className="text-xs font-bold text-stone-700 bg-stone-200 px-2 py-0.5 rounded-lg">
                       {t('landing.preview.phAction', 'Ideal for Wheat/Paddy')}
@@ -413,34 +425,43 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Testimonials */}
-            <div className="lg:col-span-6 space-y-4">
-              <div className="bg-emerald-50/70 rounded-3xl p-6 border border-emerald-200/80">
-                <p className="text-stone-800 text-sm sm:text-base italic leading-relaxed mb-4">
-                  {t('landing.testimonials.quote1', '"Previously, we used to apply 4 bags of urea per acre indiscriminately. When we scanned our soil card with KrishiSaathi, we discovered our potash was already high and nitrogen was lacking. We saved ₹4,200 on inputs and saw higher wheat yields!"')}
-                </p>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-emerald-700 text-white flex items-center justify-center font-bold text-base">
-                    G
-                  </div>
-                  <div>
-                    <h5 className="font-bold text-stone-900">{t('landing.testimonials.author1', 'Gurpreet Singh')}</h5>
-                    <p className="text-xs text-stone-500">{t('landing.testimonials.role1', 'Ludhiana, Punjab • 12 Acres')}</p>
-                  </div>
+            {/* Built for FPOs Section */}
+            <div className="lg:col-span-6">
+              <div className="bg-gradient-to-br from-emerald-50 to-[#E8F0E7] rounded-3xl p-6 sm:p-8 border border-emerald-200 shadow-sm space-y-5">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-700 text-white text-xs font-bold uppercase tracking-wider">
+                  <Users className="w-3.5 h-3.5" />
+                  <span>{t('landing.fpo.badge', 'Built for FPOs')}</span>
                 </div>
-              </div>
-
-              <div className="bg-amber-50/70 rounded-3xl p-6 border border-amber-200/80">
-                <p className="text-stone-800 text-sm sm:text-base italic leading-relaxed mb-4">
-                  {t('landing.testimonials.quote2', '"Using the voice assistant in my regional language made everything straightforward. The app identified acute zinc deficiency in my black soil before cotton sowing, and the recommended spray saved our harvest."')}
+                <h3 className="text-xl sm:text-2xl font-black text-stone-900 leading-snug">
+                  {t('landing.fpo.title', 'Field-Tested Workflow for FPOs & Agri Staff')}
+                </h3>
+                <p className="text-stone-700 text-sm sm:text-base leading-relaxed">
+                  {t('landing.fpo.desc', "FPO staff scan the farmer's Soil Health Card, the farmer listens to the plan in his own language, and a text report can be sent on WhatsApp.")}
                 </p>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-amber-700 text-white flex items-center justify-center font-bold text-base">
-                    S
+                <div className="pt-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="p-3 bg-white rounded-2xl border border-emerald-100 shadow-xs">
+                    <span className="text-emerald-700 font-black text-xs block mb-1">
+                      1. {t('landing.fpo.step1Title', 'Scan Card')}
+                    </span>
+                    <span className="text-[11px] text-stone-600">
+                      {t('landing.fpo.step1Desc', 'Digitize lab values with OCR')}
+                    </span>
                   </div>
-                  <div>
-                    <h5 className="font-bold text-stone-900">{t('landing.testimonials.author2', 'Suresh Patil')}</h5>
-                    <p className="text-xs text-stone-500">{t('landing.testimonials.role2', 'Baramati, Maharashtra • 6 Acres')}</p>
+                  <div className="p-3 bg-white rounded-2xl border border-emerald-100 shadow-xs">
+                    <span className="text-emerald-700 font-black text-xs block mb-1">
+                      2. {t('landing.fpo.step2Title', 'Voice Advisory')}
+                    </span>
+                    <span className="text-[11px] text-stone-600">
+                      {t('landing.fpo.step2Desc', 'Farmer listens in local language')}
+                    </span>
+                  </div>
+                  <div className="p-3 bg-white rounded-2xl border border-emerald-100 shadow-xs">
+                    <span className="text-emerald-700 font-black text-xs block mb-1">
+                      3. {t('landing.fpo.step3Title', 'WhatsApp Report')}
+                    </span>
+                    <span className="text-[11px] text-stone-600">
+                      {t('landing.fpo.step3Desc', 'Share text summary instantly')}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -454,7 +475,7 @@ export default function LandingPage() {
       <section className="py-16 bg-gradient-to-r from-emerald-800 to-green-950 text-white text-center">
         <div className="max-w-4xl mx-auto px-4">
           <h2 className="text-3xl sm:text-4xl font-black mb-4">
-            {t('landing.bottomCta.title', 'Understand Your Soil & Maximize Yield Today')}
+            {t('landing.bottomCta.title', 'Understand Your Soil & Optimize Crop Nutrition')}
           </h2>
           <p className="text-emerald-100 text-base sm:text-lg mb-8 max-w-2xl mx-auto">
             {t('landing.bottomCta.subtitle', 'Experience the power of precision agronomy with KrishiSaathi.')}
@@ -464,7 +485,7 @@ export default function LandingPage() {
               to="/register"
               className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-amber-400 hover:bg-amber-500 text-stone-950 font-black text-lg transition shadow-xl"
             >
-              {t('landing.bottomCta.registerBtn', 'Register Free Account')}
+              {t('landing.bottomCta.registerBtn', 'Create account')}
             </Link>
             <button
               onClick={() => setIsUploadModalOpen(true)}
