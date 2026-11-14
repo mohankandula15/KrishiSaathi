@@ -210,18 +210,84 @@ test('Offline Dynamic Answer Generation in 3 Languages', async (t) => {
     assert.ok(enMixing.includes('NEVER mix Zinc Sulphate directly with Di-Ammonium Phosphate'));
   });
 
-  await t.test('Default fallback lists example questions in all languages', () => {
-    const teDef = answerOffline('hello', 'te', dynamicReport, 'శ్రీను');
-    assert.ok(teDef.includes('శ్రీను'));
-    assert.ok(teDef.includes('195 kg/ha'));
+  await t.test('Short greetings return warm greeting and 3 example questions without soil data', () => {
+    const teGreeting = answerOffline('hello', 'te', dynamicReport, 'శ్రీను');
+    assert.ok(teGreeting.includes('శ్రీను'), 'Telugu greeting should address farmer by name');
+    assert.ok(teGreeting.includes('నమస్కారం'), 'Should contain Telugu greeting');
+    assert.ok(teGreeting.includes('ఎకరాకు ఎన్ని బస్తాల యూరియా మరియు DAP వేయాలి?'), 'Should list example question 1');
+    assert.ok(teGreeting.includes('నా నేలలో నత్రజని లోపం గురించి చెప్పు'), 'Should list example question 2');
+    assert.ok(teGreeting.includes('నా నేలకు ఏ పంటలు అనుకూలం?'), 'Should list example question 3');
+    assert.ok(!teGreeting.includes('195 kg/ha'), 'Greeting must NOT present soil data');
+    assert.ok(!teGreeting.includes('pH:'), 'Greeting must NOT present soil data');
 
-    const hiDef = answerOffline('namaste', 'hi', dynamicReport, 'किशन');
-    assert.ok(hiDef.includes('किशन'));
-    assert.ok(hiDef.includes('195 kg/ha'));
+    const hiGreeting = answerOffline('namaste', 'hi', dynamicReport, 'किशन');
+    assert.ok(hiGreeting.includes('किशन'), 'Hindi greeting should address farmer by name');
+    assert.ok(hiGreeting.includes('नमस्ते'), 'Should contain Hindi greeting');
+    assert.ok(hiGreeting.includes('प्रति एकड़ कितनी बोरी यूरिया और डीएपी डालें?'), 'Should list example question 1');
+    assert.ok(hiGreeting.includes('मेरी मिट्टी में नाइट्रोजन की क्या स्थिति है?'), 'Should list example question 2');
+    assert.ok(hiGreeting.includes('मेरी मिट्टी के लिए कौन सी फसल सबसे अच्छी है?'), 'Should list example question 3');
+    assert.ok(!hiGreeting.includes('195 kg/ha'), 'Greeting must NOT present soil data');
 
-    const enDef = answerOffline('random question without keywords', 'en', dynamicReport, 'John');
-    assert.ok(enDef.includes('John'));
-    assert.ok(enDef.includes('195 kg/ha'));
+    const enGreeting = answerOffline('hi', 'en', dynamicReport, 'John');
+    assert.ok(enGreeting.includes('John'), 'English greeting should address farmer by name');
+    assert.ok(enGreeting.includes('Welcome to KrishiSaathi'), 'Should contain English welcome');
+    assert.ok(enGreeting.includes('How many bags of Urea and DAP per acre?'), 'Should list example question 1');
+    assert.ok(enGreeting.includes('How is the nitrogen level in my soil?'), 'Should list example question 2');
+    assert.ok(enGreeting.includes('What crops are recommended for my soil?'), 'Should list example question 3');
+    assert.ok(!enGreeting.includes('195 kg/ha'), 'Greeting must NOT present soil data');
+
+    const teNamaskaram = answerOffline('namaskaram', 'te', dynamicReport);
+    assert.ok(teNamaskaram.includes('నమస్కారం'), 'Should handle namaskaram transliteration');
+    assert.ok(!teNamaskaram.includes('195 kg/ha'), 'Greeting must NOT present soil data');
+  });
+
+  await t.test('Input-quality gate intercepts gibberish and returns "did not understand" with 3 questions', () => {
+    // 1. Random keyboard consonant mash
+    const gibberish1 = answerOffline('wdfghju', 'te', dynamicReport, 'శ్రీను');
+    assert.ok(gibberish1.includes('క్షమించండి, మీ ప్రశ్న అర్థం కాలేదు'), 'Should return polite not understood in Telugu');
+    assert.ok(gibberish1.includes('ఎకరాకు ఎన్ని బస్తాల యూరియా మరియు DAP వేయాలి?'), 'Should include example question');
+    assert.ok(!gibberish1.includes('195 kg/ha'), 'Gibberish must NOT receive soil data');
+
+    // 2. Home row mash
+    const gibberish2 = answerOffline('asdf', 'hi', dynamicReport, 'किशन');
+    assert.ok(gibberish2.includes('क्षमा करें, मुझे आपका सवाल समझ नहीं आया'), 'Should return polite not understood in Hindi');
+    assert.ok(gibberish2.includes('प्रति एकड़ कितनी बोरी यूरिया और डीएपी डालें?'), 'Should include example question');
+    assert.ok(!gibberish2.includes('195 kg/ha'), 'Gibberish must NOT receive soil data');
+
+    // 3. Repeated punctuation
+    const gibberish3 = answerOffline('......', 'en', dynamicReport, 'John');
+    assert.ok(gibberish3.includes("I'm sorry, I didn't understand your question"), 'Should return polite not understood in English');
+    assert.ok(gibberish3.includes('How many bags of Urea and DAP per acre?'), 'Should include example question');
+    assert.ok(!gibberish3.includes('195 kg/ha'), 'Gibberish must NOT receive soil data');
+
+    // 4. Digits only
+    const gibberish4 = answerOffline('123456', 'en', dynamicReport, 'John');
+    assert.ok(gibberish4.includes("I'm sorry, I didn't understand your question"));
+    assert.ok(!gibberish4.includes('195 kg/ha'), 'Gibberish must NOT receive soil data');
+
+    // 5. Unrecognized non-agricultural query
+    const unrec = answerOffline('what is the capital of france', 'en', dynamicReport, 'John');
+    assert.ok(unrec.includes("I'm sorry, I didn't understand your question"));
+    assert.ok(!unrec.includes('195 kg/ha'), 'Unrecognized query must NOT receive soil data');
+  });
+
+  await t.test('Tanglish and multilingual farming queries pass gate and bind calibrated soil data', () => {
+    // Tanglish query
+    const tanglishAns = answerOffline('naa nelalo nitrogen takkuva undi', 'te', dynamicReport, 'రైతు');
+    assert.ok(tanglishAns.includes('195 kg/ha'), 'Tanglish query should bind calibrated soil nitrogen value 195 kg/ha');
+    assert.ok(tanglishAns.includes('యూరియా') || tanglishAns.includes('నత్రజని'), 'Should contain agricultural guidance');
+
+    // Telugu script query
+    const teAns = answerOffline('నా నేలలో నత్రజని లోపం గురించి చెప్పు', 'te', dynamicReport);
+    assert.ok(teAns.includes('195 kg/ha'), 'Telugu script query should bind calibrated nitrogen 195 kg/ha');
+
+    // Hindi query
+    const hiAns = answerOffline('मेरी मिट्टी में नाइट्रोजन की स्थिति कैसी है?', 'hi', dynamicReport);
+    assert.ok(hiAns.includes('195 kg/ha'), 'Hindi query should bind calibrated nitrogen 195 kg/ha');
+
+    // English query
+    const enAns = answerOffline('how is my nitrogen level?', 'en', dynamicReport);
+    assert.ok(enAns.includes('195 kg/ha'), 'English query should bind calibrated nitrogen 195 kg/ha');
   });
 });
 

@@ -48,6 +48,215 @@ STRONG_HINDI_MARKERS = {
     "namaste", "kitna", "kitni", "upay", "karun", "dalna"
 }
 
+# ==============================================================================
+# INPUT QUALITY GATE & VOCABULARY ENGINE
+# ==============================================================================
+
+KEYBOARD_MASH_REGEX = re.compile(
+    r"(?:asdf|sdfg|dfgh|fghj|ghjk|hjkl|qwer|wert|erty|rtyw|uiop|zxcv|xcvb|cvbn|vbnm|wdfg|dfghju)",
+    re.I
+)
+REPEATED_CHAR_REGEX = re.compile(r"(.)\1{3,}")
+CONSONANT_CLUSTER_REGEX = re.compile(r"[bcdfghjklmnpqrstvwxz]{4,}", re.I)
+
+GREETING_TOKENS = {
+    "hi", "hello", "hey", "namaste", "namasthe", "namaskar", "namaskaram", "namaskara",
+    "halo", "pranam", "pranaam", "vanakkam", "adab", "welcome", "ram",
+    "హలో", "నమస్కారం", "నమస్తే", "హాయ్", "నమస్కారాలు",
+    "नमस्ते", "नमस्कार", "हाय", "हेलो", "प्रणाम"
+}
+
+HONORIFIC_TOKENS = {
+    "ji", "garu", "sir", "madam", "bhai", "annayya", "గారు", "జీ", "जी",
+    "krishisaathi", "saathi", "bot", "ai", "kushi", "krishi"
+}
+
+RECOGNIZED_FARMING_VOCABULARY = {
+    # Soil, nutrients, fertilizers
+    "soil", "soils", "nela", "neela", "matti", "mitti", "khet", "polam", "land",
+    "nitrogen", "natrajani", "urea", "phosphorus", "bhaswaram", "dap", "ssp",
+    "potassium", "potash", "mop", "zinc", "zinku", "sulphur", "sulfur", "boron", "iron",
+    "organic", "carbon", "karbanam", "oc", "jaivik", "gobar", "fym", "compost", "vermicompost",
+    "manure", "fertilizer", "fertilizers", "eruvu", "eruvulu", "khad", "urvarak",
+    "ph", "saline", "salinity", "alkaline", "acidic", "kshara", "amla", "choudu", "uppu",
+    "gypsum", "lime", "sunnam", "chuna", "ec", "npk",
+
+    # Crops
+    "crop", "crops", "panta", "pantalu", "fasal", "fasle", "faslo", "kheti",
+    "paddy", "vari", "rice", "dhan", "chawal", "groundnut", "verusanaga", "mungfali",
+    "cotton", "pratti", "kapas", "chilli", "mirapa", "mirch", "maize", "mokkajonna", "makka",
+    "wheat", "gehun", "pulses", "dal", "bengalgram", "redgram", "blackgram", "greengram",
+    "pesara", "minumu", "kandulu", "kadiri", "bpt",
+
+    # Farming practices, dosage, irrigation
+    "dose", "dosage", "mothadu", "matra", "khurak", "bags", "bag", "basta", "bastalu",
+    "bastha", "basthalu", "bori", "acre", "ekara", "ekaraku", "ekad", "hectare",
+    "water", "watering", "neeru", "neeti", "pani", "paani", "irrigation", "sinchai",
+    "moisture", "teva", "nami", "sowing", "seed", "seeds", "vithanalu", "beej",
+    "spray", "chlorosis", "yellow", "pasupu", "peeli", "leaves", "akulu",
+    "patti", "root", "roots", "verlu", "veru", "jad", "kandam", "tana",
+    "pest", "disease", "rog", "keeda", "weed", "kalupu",
+
+    # Agronomic queries / actions
+    "health", "arogyam", "swasthya", "score", "report", "card", "test", "pariksha",
+    "condition", "paristhiti", "sthiti", "saram", "balam", "fertility",
+    "mix", "mixing", "kalipi", "kalapacha", "kalapavaccha", "milana", "mila",
+    "use", "vadavacha", "vadala", "dalu", "dalna", "veyyali", "veyali", "veskovali",
+    "takkuva", "takkuvaga", "ekkuva", "ekkuvaga", "kam", "jyada", "low", "high", "deficient",
+    "recommend", "recommendation", "suitable", "anukulam", "upayukt", "best",
+
+    # Common farming verbs/pronouns in Tanglish/Hinglish
+    "naa", "nenu", "ma", "mana", "mera", "meri", "mere", "apna", "apni",
+    "undi", "undhi", "undha", "ledu", "kavali", "em", "emi", "ela", "elaga", "eppudu", "entha", "enni",
+    "cheyali", "cheyyali", "cheyocchu", "cheyyocha", "chesuko", "chudandi",
+    "kya", "kaise", "kab", "kitna", "kitni", "kaun", "kaunsi", "chahiye", "batao", "kare", "karun", "karna",
+    "rythu", "raithu", "kisan", "garu", "ji", "bhai",
+
+    # Greetings
+    "hi", "hello", "hey", "namaste", "namasthe", "namaskar", "namaskaram", "namaskara",
+    "halo", "pranam", "pranaam", "vanakkam", "adab", "welcome"
+}
+
+ALLOWED_TWO_LETTER = {"hi", "oc", "ph", "zn", "em", "ha", "na", "kg", "ec"}
+
+def is_greeting(text: str) -> bool:
+    if not text or not isinstance(text, str):
+        return False
+    clean = text.strip().lower()
+    if not clean:
+        return False
+
+    tokens = [t for t in re.split(r"[^\w\u0C00-\u0C7F\u0900-\u097F]+", clean) if t]
+    if not tokens:
+        return False
+
+    if clean.startswith("good morning") or clean.startswith("good afternoon") or clean.startswith("good evening") or clean.startswith("ram ram"):
+        if len(tokens) <= 4:
+            return True
+
+    has_greeting = any(t in GREETING_TOKENS for t in tokens)
+    if not has_greeting:
+        return False
+
+    non_greeting_tokens = [t for t in tokens if t not in GREETING_TOKENS and t not in HONORIFIC_TOKENS]
+    return len(non_greeting_tokens) == 0
+
+def is_gibberish_or_invalid(text: str) -> bool:
+    if not text or not isinstance(text, str):
+        return True
+    trimmed = text.strip()
+    if not trimmed:
+        return True
+
+    # 1. Must contain at least one valid letter (Latin, Telugu, or Devanagari)
+    if not re.search(r"[a-zA-Z\u0C00-\u0C7F\u0900-\u097F]", trimmed):
+        return True
+
+    # 2. Repeated characters 4+ in a row (e.g. "aaaa", "zzzz", ".....", "1111")
+    if REPEATED_CHAR_REGEX.search(trimmed):
+        return True
+
+    # 3. Known keyboard mash substrings
+    if KEYBOARD_MASH_REGEX.search(trimmed):
+        return True
+
+    # 4. Strip punctuation/symbols to inspect words
+    clean = re.sub(r"[^\w\s\u0C00-\u0C7F\u0900-\u097F]", " ", trimmed).strip()
+    tokens = [t.lower() for t in clean.split() if t]
+    if not tokens:
+        return True
+
+    # 5. Very short checks: if all letters < 2, or single token < 3 without recognized 2-letter word
+    all_letters = re.findall(r"[a-zA-Z\u0C00-\u0C7F\u0900-\u097F]", clean)
+    if len(all_letters) < 2:
+        return True
+    if len(all_letters) == 2 and len(tokens) == 1:
+        t = tokens[0]
+        if (
+            t not in ALLOWED_TWO_LETTER
+            and not TELUGU_SCRIPT_REGEX.search(t)
+            and not DEVANAGARI_SCRIPT_REGEX.search(t)
+        ):
+            return True
+
+    # 6. Text with Telugu or Devanagari script passes character gate
+    if TELUGU_SCRIPT_REGEX.search(clean) or DEVANAGARI_SCRIPT_REGEX.search(clean):
+        return False
+
+    # 7. For Latin text (English / Tanglish / Hinglish):
+    # Check if ANY token is in recognized farming or greeting vocabulary
+    if any(t in RECOGNIZED_FARMING_VOCABULARY for t in tokens):
+        return False
+
+    # If no recognized word:
+    # Check consonant clusters (4+ consecutive consonants in Latin words)
+    if CONSONANT_CLUSTER_REGEX.search(clean):
+        return True
+
+    # Check vowel ratio across all Latin tokens
+    latin_letters = re.findall(r"[a-zA-Z]", clean)
+    if len(latin_letters) >= 4:
+        vowels = re.findall(r"[aeiouyAEIOUY]", clean)
+        vowel_ratio = len(vowels) / len(latin_letters)
+        if vowel_ratio < 0.20:
+            return True
+
+    return False
+
+def get_not_understood_response(lang: str = "te") -> str:
+    if lang == "te":
+        return (
+            "క్షమించండి, మీ ప్రశ్న అర్థం కాలేదు. దయచేసి వ్యవసాయం, నేల పరీక్ష, ఎరువులు లేదా పంటల గురించి అడగండి.\n\n"
+            "ఉదాహరణకు ఈ ప్రశ్నలు అడగవచ్చు:\n"
+            "1. \"ఎకరాకు ఎన్ని బస్తాల యూరియా మరియు DAP వేయాలి?\"\n"
+            "2. \"నా నేలలో నత్రజని లోపం గురించి చెప్పు\"\n"
+            "3. \"నా నేలకు ఏ పంటలు అనుకూలం?\""
+        )
+    if lang == "hi":
+        return (
+            "क्षमा करें, मुझे आपका सवाल समझ नहीं आया। कृपया खेती, मिट्टी, खाद या फसलों से संबंधित प्रश्न पूछें।\n\n"
+            "उदाहरण के लिए आप ये सवाल पूछ सकते हैं:\n"
+            "1. \"प्रति एकड़ कितनी बोरी यूरिया और डीएपी डालें?\"\n"
+            "2. \"मेरी मिट्टी में नाइट्रोजन की क्या स्थिति है?\"\n"
+            "3. \"मेरी मिट्टी के लिए कौन सी फसल सबसे अच्छी है?\""
+        )
+    return (
+        "I'm sorry, I didn't understand your question. Please ask something related to farming, soil health, fertilizers, or crops.\n\n"
+        "Here are 3 example questions you can ask:\n"
+        "1. \"How many bags of Urea and DAP per acre?\"\n"
+        "2. \"How is the nitrogen level in my soil?\"\n"
+        "3. \"What crops are recommended for my soil?\""
+    )
+
+def get_greeting_response(lang: str = "te", farmer_name: str = "") -> str:
+    name = farmer_name.strip() if farmer_name else ""
+    if lang == "te":
+        greeting = f"నమస్కారం {name} గారు! 🙏🌾" if name else "నమస్కారం! 🙏🌾"
+        return (
+            f"{greeting} కృషిసాథి (KrishiSaathi) సహాయకుడికి స్వాగతం. మీ నేల ఆరోగ్య కార్డు, ఎరువుల మోతాదు లేదా పంటల గురించి ఏదైనా అడగవచ్చు.\n\n"
+            "ఉదాహరణకు ఈ ప్రశ్నలు అడగవచ్చు:\n"
+            "1. \"ఎకరాకు ఎన్ని బస్తాల యూరియా మరియు DAP వేయాలి?\"\n"
+            "2. \"నా నేలలో నత్రజని లోపం గురించి చెప్పు\"\n"
+            "3. \"నా నేలకు ఏ పంటలు అనుకూలం?\""
+        )
+    if lang == "hi":
+        greeting = f"नमस्ते {name} जी! 🙏🌾" if name else "नमस्ते! 🙏🌾"
+        return (
+            f"{greeting} कृषिशाथी (KrishiSaathi) में आपका स्वागत है। आप अपनी मिट्टी रिपोर्ट, खाद की सही मात्रा या फसलों के बारे में पूछ सकते हैं।\n\n"
+            "उदाहरण के लिए आप ये सवाल पूछ सकते हैं:\n"
+            "1. \"प्रति एकड़ कितनी बोरी यूरिया और डीएपी डालें?\"\n"
+            "2. \"मेरी मिट्टी में नाइट्रोजन की क्या स्थिति है?\"\n"
+            "3. \"मेरी मिट्टी के लिए कौन सी फसल सबसे अच्छी है?\""
+        )
+    greeting = f"Hello {name}! 🌾" if name else "Hello! 🌾"
+    return (
+        f"{greeting} Welcome to KrishiSaathi. You can ask me questions about your soil health card, fertilizer dosages, or recommended crops.\n\n"
+        "Here are 3 example questions you can ask:\n"
+        "1. \"How many bags of Urea and DAP per acre?\"\n"
+        "2. \"How is the nitrogen level in my soil?\"\n"
+        "3. \"What crops are recommended for my soil?\""
+    )
+
 def detect_language(text: str, preferred_lang: Optional[str] = None) -> str:
     """
     Detect whether the farmer is speaking/typing Telugu, Hindi, or English.
@@ -315,12 +524,7 @@ def generate_multilingual_fallback_response(
 
         # Default Telugu Response
         else:
-            return (
-                f"నమస్కారం {farmer_name} గారు! మీ ప్రశ్న '{query}' కి సంబంధించి:\n\n"
-                f"మీ {district} ప్రాంత నేల పరీక్ష ప్రకారం నత్రజని తక్కువగా ఉంది ({soil['n']} kg/ha) మరియు pH {soil['ph']} గా ఉంది. "
-                "సమతుల్య ఎరువుల యాజమాన్యం పాటించడం మరియు తగిన సమయంలో సాగునీరు అందించడం ద్వారా దిగుబడిని 15-20% పెంచుకోవచ్చు.\n\n"
-                "మరిన్ని వివరాల కోసం మీ రైతు భరోసా కేంద్రం (RBK) లేదా డ్యాష్‌బోర్డ్‌లోని ఎరువుల కాలిక్యులేటర్‌ను చూడండి."
-            )
+            return get_not_understood_response("te")
 
     # --------------------------------------------------------------------------
     # 2. HINDI ADVISORY ENGINE (हिंदी)
@@ -375,10 +579,7 @@ def generate_multilingual_fallback_response(
                 "इससे मिट्टी की जल धारण क्षमता बढ़ेगी और फसल उत्पादन में वृद्धि होगी।"
             )
         else:
-            return (
-                f"नमस्ते {farmer_name} जी! आपके सवाल '{query}' के लिए कृषि मार्गदर्शन:\n\n"
-                f"आपके क्षेत्र ({district}, {state}) में आपकी मिट्टी के pH {soil['ph']} के अनुसार संतुलित उर्वरक प्रबंधन और समय पर सिंचाई करने से पैदावार में 15-20% की बढ़ोतरी संभव है।"
-            )
+            return get_not_understood_response("hi")
 
     # --------------------------------------------------------------------------
     # 3. ENGLISH ADVISORY ENGINE
@@ -437,12 +638,7 @@ def generate_multilingual_fallback_response(
                 "Boosting Organic Carbon enhances microbial activity, water retention, and fertilizer use efficiency."
             )
         else:
-            return (
-                f"Hello {farmer_name}! For your query '{query}':\n\n"
-                f"Based on your soil diagnostic card ({soil['report_name']}) in {district}, {state}, "
-                f"your neutral pH ({soil['ph']}) provides an excellent base for cereal and pulse cultivation. "
-                "Refer to the Fertilizer Calculator on your dashboard for exact per-acre bag schedules."
-            )
+            return get_not_understood_response("en")
 
 
 def generate_agricultural_ai_response(
@@ -456,6 +652,11 @@ def generate_agricultural_ai_response(
     Attempts Google Gemini API (gemini-2.5-flash) first when GEMINI_API_KEY is configured.
     Seamlessly falls back to our domain agronomy engine if offline or unkeyed.
     """
+    if is_greeting(query):
+        return get_greeting_response(lang, farmer.get("name", ""))
+    if is_gibberish_or_invalid(query):
+        return get_not_understood_response(lang)
+
     gemini_key = settings.GEMINI_API_KEY or os.getenv("GEMINI_API_KEY", "")
     
     if gemini_key:
@@ -512,7 +713,8 @@ def generate_agricultural_ai_response(
             3. If Nitrogen is low, recommend Neem-Coated Urea in 3 splits and organic manure, reminding that DAP already supplies starter N.
             4. If Potassium is high, advise reducing MOP by 50% to save input cost.
             5. Mandatory Precaution: Never mix Zinc Sulphate and DAP together.
-            6. Keep the response concise (2-3 short paragraphs), warm, actionable, and suitable for text-to-speech voice playback.
+            6. If the question is unclear, gibberish, or not about farming, soil, crops, fertilizer, weather or farm finance, say you did not understand and ask the farmer to rephrase. Never guess. Never invent data.
+            7. Keep the response concise (2-3 short paragraphs), warm, actionable, and suitable for text-to-speech voice playback.
             """
 
             response = client.models.generate_content(
@@ -558,6 +760,28 @@ def send_chat_message(
     # Accurately detect language from input script/phonetics or farmer's selected preference
     preferred_lang = chat_input.language or current_farmer.get("preferred_language")
     detected_lang = detect_language(msg, preferred_lang=preferred_lang)
+    farmer_name = current_farmer.get("name", "")
+
+    # Input-quality gate: handle greetings and gibberish without calling Gemini or unnecessary database waste
+    if is_greeting(msg):
+        response_text = get_greeting_response(detected_lang, farmer_name)
+        created_chat = db.create_chat_message(
+            farmer_id=current_farmer["id"],
+            message=msg,
+            response=response_text,
+            language=detected_lang
+        )
+        return created_chat
+
+    if is_gibberish_or_invalid(msg):
+        response_text = get_not_understood_response(detected_lang)
+        created_chat = db.create_chat_message(
+            farmer_id=current_farmer["id"],
+            message=msg,
+            response=response_text,
+            language=detected_lang
+        )
+        return created_chat
 
     # Fetch farmer's soil context
     soil_context = get_farmer_soil_context(current_farmer["id"])

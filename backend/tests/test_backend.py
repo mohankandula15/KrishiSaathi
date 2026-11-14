@@ -162,6 +162,77 @@ def test_chat_history_persistence():
     assert len(history_res.json()) == 1
     assert history_res.json()[0]["message"] == "गेहूं के लिए यूरिया की मात्रा कितनी है?"
 
+def test_chat_gibberish_and_greeting_quality_gate():
+    """Verify input-quality gate for greetings, gibberish, and valid multilingual questions."""
+    mobile = f"94{uuid.uuid4().int % 100000000:08d}"
+    reg_res = client.post("/api/auth/register", json={
+        "name": "Venkat Rao",
+        "mobile_number": mobile,
+        "password": "VenkatPassword123",
+        "district": "Guntur",
+        "state": "Andhra Pradesh",
+        "preferred_language": "te"
+    })
+    token = reg_res.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 1. Greetings return greeting and 3 example questions without fake soil numbers
+    res_hello = client.post("/api/chat/send", json={"message": "hello", "language": "en"}, headers=headers)
+    assert res_hello.status_code == 201
+    txt_hello = res_hello.json()["response"]
+    assert "Welcome to KrishiSaathi" in txt_hello or "Hello" in txt_hello
+    assert "How many bags of Urea and DAP per acre?" in txt_hello
+    assert "195 kg/ha" not in txt_hello
+
+    res_namaste = client.post("/api/chat/send", json={"message": "namaste", "language": "hi"}, headers=headers)
+    assert res_namaste.status_code == 201
+    txt_namaste = res_namaste.json()["response"]
+    assert "नमस्ते" in txt_namaste
+    assert "प्रति एकड़ कितनी बोरी यूरिया" in txt_namaste
+    assert "195 kg/ha" not in txt_namaste
+
+    res_te_greet = client.post("/api/chat/send", json={"message": "నమస్కారం", "language": "te"}, headers=headers)
+    assert res_te_greet.status_code == 201
+    txt_te_greet = res_te_greet.json()["response"]
+    assert "నమస్కారం" in txt_te_greet
+    assert "ఎకరాకు ఎన్ని బస్తాల యూరియా" in txt_te_greet
+
+    # 2. Gibberish queries return polite 'did not understand' message with 3 example questions
+    res_wdf = client.post("/api/chat/send", json={"message": "wdfghju", "language": "te"}, headers=headers)
+    assert res_wdf.status_code == 201
+    txt_wdf = res_wdf.json()["response"]
+    assert "క్షమించండి, మీ ప్రశ్న అర్థం కాలేదు" in txt_wdf
+    assert "ఎకరాకు ఎన్ని బస్తాల యూరియా మరియు DAP వేయాలి?" in txt_wdf
+    assert "185.0" not in txt_wdf and "195 kg/ha" not in txt_wdf
+
+    res_asdf = client.post("/api/chat/send", json={"message": "asdf", "language": "hi"}, headers=headers)
+    assert res_asdf.status_code == 201
+    txt_asdf = res_asdf.json()["response"]
+    assert "क्षमा करें, मुझे आपका सवाल समझ नहीं आया" in txt_asdf
+    assert "प्रति एकड़ कितनी बोरी यूरिया" in txt_asdf
+
+    res_dots = client.post("/api/chat/send", json={"message": "......", "language": "en"}, headers=headers)
+    assert res_dots.status_code == 201
+    txt_dots = res_dots.json()["response"]
+    assert "I'm sorry, I didn't understand your question" in txt_dots
+    assert "How many bags of Urea and DAP per acre?" in txt_dots
+
+    res_digits = client.post("/api/chat/send", json={"message": "123456", "language": "en"}, headers=headers)
+    assert res_digits.status_code == 201
+    txt_digits = res_digits.json()["response"]
+    assert "I'm sorry, I didn't understand your question" in txt_digits
+
+    # 3. Valid queries pass gate and provide proper agricultural guidance
+    res_tanglish = client.post("/api/chat/send", json={"message": "naa nelalo nitrogen takkuva undi", "language": "te"}, headers=headers)
+    assert res_tanglish.status_code == 201
+    txt_tanglish = res_tanglish.json()["response"]
+    assert "నత్రజని" in txt_tanglish or "యూరియా" in txt_tanglish
+
+    res_valid_en = client.post("/api/chat/send", json={"message": "how is my nitrogen level?", "language": "en"}, headers=headers)
+    assert res_valid_en.status_code == 201
+    txt_valid_en = res_valid_en.json()["response"]
+    assert "Nitrogen" in txt_valid_en or "Urea" in txt_valid_en
+
 def test_extract_soil_report_multipart():
     """Test /api/soil-reports/extract endpoint with multipart file upload."""
     sample_pdf_path = Path(__file__).resolve().parent.parent.parent / "tests" / "samples" / "sample_soil_report.pdf"

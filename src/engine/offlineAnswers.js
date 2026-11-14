@@ -11,7 +11,165 @@
 import { analyzeSoil } from './icarEngine.js';
 
 // ==============================================================================
-// 1. INTENT RECOGNITION REGEX PATTERNS (TE / TANGLISH / HI / HINGLISH / EN)
+// 1. INPUT QUALITY GATE & VOCABULARY ENGINE
+// ==============================================================================
+
+const TELUGU_SCRIPT_REGEX = /[\u0C00-\u0C7F]/;
+const DEVANAGARI_SCRIPT_REGEX = /[\u0900-\u097F]/;
+const KEYBOARD_MASH_REGEX = /(?:asdf|sdfg|dfgh|fghj|ghjk|hjkl|qwer|wert|erty|rtyw|uiop|zxcv|xcvb|cvbn|vbnm|wdfg|dfghju)/i;
+const REPEATED_CHAR_REGEX = /(.)\1{3,}/u;
+const CONSONANT_CLUSTER_REGEX = /[bcdfghjklmnpqrstvwxz]{4,}/i;
+
+const GREETING_TOKENS = new Set([
+  'hi', 'hello', 'hey', 'namaste', 'namasthe', 'namaskar', 'namaskaram', 'namaskara',
+  'halo', 'pranam', 'pranaam', 'vanakkam', 'adab', 'welcome', 'ram',
+  'హలో', 'నమస్కారం', 'నమస్తే', 'హాయ్', 'నమస్కారాలు',
+  'नमस्ते', 'नमस्कार', 'हाय', 'हेलो', 'प्रणाम'
+]);
+
+const HONORIFIC_TOKENS = new Set([
+  'ji', 'garu', 'sir', 'madam', 'bhai', 'annayya', 'గారు', 'జీ', 'जी',
+  'krishisaathi', 'saathi', 'bot', 'ai', 'kushi', 'krishi'
+]);
+
+const RECOGNIZED_FARMING_VOCABULARY = new Set([
+  // Soil, nutrients, fertilizers
+  'soil', 'soils', 'nela', 'neela', 'matti', 'mitti', 'khet', 'polam', 'land',
+  'nitrogen', 'natrajani', 'urea', 'phosphorus', 'bhaswaram', 'dap', 'ssp',
+  'potassium', 'potash', 'mop', 'zinc', 'zinku', 'sulphur', 'sulfur', 'boron', 'iron',
+  'organic', 'carbon', 'karbanam', 'oc', 'jaivik', 'gobar', 'fym', 'compost', 'vermicompost',
+  'manure', 'fertilizer', 'fertilizers', 'eruvu', 'eruvulu', 'khad', 'urvarak',
+  'ph', 'saline', 'salinity', 'alkaline', 'acidic', 'kshara', 'amla', 'choudu', 'uppu',
+  'gypsum', 'lime', 'sunnam', 'chuna', 'ec', 'npk',
+
+  // Crops
+  'crop', 'crops', 'panta', 'pantalu', 'fasal', 'fasle', 'faslo', 'kheti',
+  'paddy', 'vari', 'rice', 'dhan', 'chawal', 'groundnut', 'verusanaga', 'mungfali',
+  'cotton', 'pratti', 'kapas', 'chilli', 'mirapa', 'mirch', 'maize', 'mokkajonna', 'makka',
+  'wheat', 'gehun', 'pulses', 'dal', 'bengalgram', 'redgram', 'blackgram', 'greengram',
+  'pesara', 'minumu', 'kandulu', 'kadiri', 'bpt',
+
+  // Farming practices, dosage, irrigation
+  'dose', 'dosage', 'mothadu', 'matra', 'khurak', 'bags', 'bag', 'basta', 'bastalu',
+  'bastha', 'basthalu', 'bori', 'acre', 'ekara', 'ekaraku', 'ekad', 'hectare',
+  'water', 'watering', 'neeru', 'neeti', 'pani', 'paani', 'irrigation', 'sinchai',
+  'moisture', 'teva', 'nami', 'sowing', 'seed', 'seeds', 'vithanalu', 'beej',
+  'spray', 'chlorosis', 'yellow', 'pasupu', 'peeli', 'leaves', 'akulu',
+  'patti', 'root', 'roots', 'verlu', 'veru', 'jad', 'kandam', 'tana',
+  'pest', 'disease', 'rog', 'keeda', 'weed', 'kalupu',
+
+  // Agronomic queries / actions
+  'health', 'arogyam', 'swasthya', 'score', 'report', 'card', 'test', 'pariksha',
+  'condition', 'paristhiti', 'sthiti', 'saram', 'balam', 'fertility',
+  'mix', 'mixing', 'kalipi', 'kalapacha', 'kalapavaccha', 'milana', 'mila',
+  'use', 'vadavacha', 'vadala', 'dalu', 'dalna', 'veyyali', 'veyali', 'veskovali',
+  'takkuva', 'takkuvaga', 'ekkuva', 'ekkuvaga', 'kam', 'jyada', 'low', 'high', 'deficient',
+  'recommend', 'recommendation', 'suitable', 'anukulam', 'upayukt', 'best',
+
+  // Common farming verbs/pronouns in Tanglish/Hinglish
+  'naa', 'nenu', 'ma', 'mana', 'mera', 'meri', 'mere', 'apna', 'apni',
+  'undi', 'undhi', 'undha', 'ledu', 'kavali', 'em', 'emi', 'ela', 'elaga', 'eppudu', 'entha', 'enni',
+  'cheyali', 'cheyyali', 'cheyocchu', 'cheyyocha', 'chesuko', 'chudandi',
+  'kya', 'kaise', 'kab', 'kitna', 'kitni', 'kaun', 'kaunsi', 'chahiye', 'batao', 'kare', 'karun', 'karna',
+  'rythu', 'raithu', 'kisan', 'garu', 'ji', 'bhai',
+
+  // Greetings
+  'hi', 'hello', 'hey', 'namaste', 'namasthe', 'namaskar', 'namaskaram', 'namaskara',
+  'halo', 'pranam', 'pranaam', 'vanakkam', 'adab', 'welcome'
+]);
+
+export function isGreeting(text) {
+  if (!text || typeof text !== 'string') return false;
+  const clean = text.trim().toLowerCase();
+  if (!clean) return false;
+
+  const tokens = clean
+    .replace(/[^\w\s\u0C00-\u0C7F\u0900-\u097F]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (tokens.length === 0) return false;
+
+  if (clean.startsWith('good morning') || clean.startsWith('good afternoon') || clean.startsWith('good evening') || clean.startsWith('ram ram')) {
+    if (tokens.length <= 4) return true;
+  }
+
+  const hasGreeting = tokens.some(t => GREETING_TOKENS.has(t));
+  if (!hasGreeting) return false;
+
+  const nonGreetingTokens = tokens.filter(t => !GREETING_TOKENS.has(t) && !HONORIFIC_TOKENS.has(t));
+  return nonGreetingTokens.length === 0;
+}
+
+export function isGibberishOrInvalid(text) {
+  if (!text || typeof text !== 'string') return true;
+  const trimmed = text.trim();
+  if (trimmed.length === 0) return true;
+
+  // 1. Must contain at least one valid letter (Latin, Telugu, or Devanagari)
+  if (!/[a-zA-Z\u0C00-\u0C7F\u0900-\u097F]/.test(trimmed)) {
+    return true; // e.g. "......", "123456", "?!@", "---"
+  }
+
+  // 2. Repeated characters 4+ in a row (e.g. "aaaa", "zzzz", ".....", "1111")
+  if (REPEATED_CHAR_REGEX.test(trimmed)) {
+    return true;
+  }
+
+  // 3. Known keyboard mash substrings
+  if (KEYBOARD_MASH_REGEX.test(trimmed)) {
+    return true;
+  }
+
+  // 4. Strip punctuation/symbols to inspect words
+  const clean = trimmed.replace(/[^\w\s\u0C00-\u0C7F\u0900-\u097F]/g, ' ').trim();
+  const tokens = clean.toLowerCase().split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return true;
+
+  // 5. Very short checks: if all letters < 2, or single token < 3 without recognized 2-letter word
+  const totalLetters = (clean.match(/[a-zA-Z\u0C00-\u0C7F\u0900-\u097F]/g) || []).length;
+  if (totalLetters < 2) return true;
+  if (totalLetters === 2 && tokens.length === 1) {
+    const t = tokens[0];
+    const ALLOWED_TWO_LETTER = new Set(['hi', 'oc', 'ph', 'zn', 'em', 'ha', 'na', 'kg', 'ec']);
+    if (!ALLOWED_TWO_LETTER.has(t) && !TELUGU_SCRIPT_REGEX.test(t) && !DEVANAGARI_SCRIPT_REGEX.test(t)) {
+      return true;
+    }
+  }
+
+  // 6. Text with Telugu or Devanagari script passes character gate
+  if (TELUGU_SCRIPT_REGEX.test(clean) || DEVANAGARI_SCRIPT_REGEX.test(clean)) {
+    return false;
+  }
+
+  // 7. For Latin text (English / Tanglish / Hinglish):
+  // Check if ANY token is in recognized farming or greeting vocabulary
+  const hasRecognizedWord = tokens.some(t => RECOGNIZED_FARMING_VOCABULARY.has(t));
+  if (hasRecognizedWord) {
+    return false;
+  }
+
+  // If no recognized word:
+  // Check consonant clusters (4+ consecutive consonants in Latin words)
+  if (CONSONANT_CLUSTER_REGEX.test(clean)) {
+    return true;
+  }
+
+  // Check vowel ratio across all Latin tokens
+  const latinLetters = clean.match(/[a-zA-Z]/g) || [];
+  if (latinLetters.length >= 4) {
+    const vowels = clean.match(/[aeiouyAEIOUY]/g) || [];
+    const vowelRatio = vowels.length / latinLetters.length;
+    if (vowelRatio < 0.20) {
+      return true; // e.g. "wdfghju" (1/7 = 0.14)
+    }
+  }
+
+  return false;
+}
+
+// ==============================================================================
+// 2. INTENT RECOGNITION REGEX PATTERNS (TE / TANGLISH / HI / HINGLISH / EN)
 // ==============================================================================
 const INTENTS = [
   {
@@ -138,22 +296,25 @@ const INTENTS = [
 
 // Detect intent from question
 export function detectIntent(question) {
-  if (!question || typeof question !== 'string') return 'default_fallback';
-  const q = question.trim().toLowerCase();
+  if (!question || typeof question !== 'string') return 'unrecognized';
+  const q = question.trim();
+  if (isGibberishOrInvalid(q)) return 'unrecognized';
+  if (isGreeting(q)) return 'greeting';
 
+  const lower = q.toLowerCase();
   for (const intent of INTENTS) {
     for (const pat of intent.patterns) {
-      if (pat.test(q)) {
+      if (pat.test(lower)) {
         return intent.id;
       }
     }
   }
 
-  return 'default_fallback';
+  return 'unrecognized';
 }
 
 // ==============================================================================
-// 2. TEMPLATE BUILDERS PER INTENT & LANGUAGE
+// 3. TEMPLATE BUILDERS PER INTENT & LANGUAGE
 // ==============================================================================
 
 function answerMixingPrecautions(lang) {
@@ -680,57 +841,103 @@ function answerOverallCondition(lang, analysis, reportTitle) {
     `\n\n💡 Ask about fertilizer doses or crop recommendations anytime!`;
 }
 
-function answerDefaultFallback(lang, analysis, farmerName, reportTitle) {
-  const vals = analysis.values;
-  const name = farmerName || (lang === 'te' ? 'రైతు' : (lang === 'hi' ? 'किसान' : 'Farmer'));
-
+export function answerNotUnderstood(lang) {
   if (lang === 'te') {
-    return `నమస్కారం ${name} గారు! 🙏🌾 నేను మీ కృషిసాథి (KrishiSaathi) ICAR ఆఫ్‌లైన్ ఇంజిన్‌ని.\n\n` +
-      `మీ నేల కార్డు (${reportTitle}) వివరాలు:\n` +
-      `• pH: ${vals.ph ?? 7.2} (${analysis.ratings.ph.label}) | నత్రజని: ${vals.n ?? 185} kg/ha (${analysis.ratings.nitrogen.label})\n` +
-      `• భాస్వరం: ${vals.p ?? 18.4} kg/ha (${analysis.ratings.phosphorus.label}) | పొటాష్: ${vals.k ?? 295} kg/ha (${analysis.ratings.potassium.label})\n\n` +
-      `మీరు క్రింది ప్రశ్నలను అడగవచ్చు:\n` +
+    return (
+      `క్షమించండి, మీ ప్రశ్న అర్థం కాలేదు. దయచేసి వ్యవసాయం, నేల పరీక్ష, ఎరువులు లేదా పంటల గురించి అడగండి.\n\n` +
+      `ఉదాహరణకు ఈ ప్రశ్నలు అడగవచ్చు:\n` +
       `1. "ఎకరాకు ఎన్ని బస్తాల యూరియా మరియు DAP వేయాలి?"\n` +
-      `2. "జింక్ సల్ఫేట్ మరియు DAP కలిపి వేయవచ్చా?"\n` +
-      `3. "నా నేలలో నత్రజని లోపం గురించి చెప్పు"\n` +
-      `4. "నా నేలకు ఏ పంటలు అనుకూలం?"\n` +
-      `5. "నా నేల మొత్తం పరిస్థితి ఎలా ఉంది?"`;
+      `2. "నా నేలలో నత్రజని లోపం గురించి చెప్పు"\n` +
+      `3. "నా నేలకు ఏ పంటలు అనుకూలం?"`
+    );
   }
 
   if (lang === 'hi') {
-    return `नमस्ते ${name} जी! 🙏🌾 मैं आपका कृषिशाथी (KrishiSaathi) ICAR ऑफलाइन कृषि सलाहकार हूँ।\n\n` +
-      `आपकी सक्रिय मिट्टी रिपोर्ट (${reportTitle}):\n` +
-      `• pH: ${vals.ph ?? 7.2} (${analysis.ratings.ph.label}) | नाइट्रोजन: ${vals.n ?? 185} kg/ha (${analysis.ratings.nitrogen.label})\n` +
-      `• फास्फोरस: ${vals.p ?? 18.4} kg/ha (${analysis.ratings.phosphorus.label}) | पोटाश: ${vals.k ?? 295} kg/ha (${analysis.ratings.potassium.label})\n\n` +
-      `आप इस तरह के सवाल पूछ सकते हैं:\n` +
+    return (
+      `क्षमा करें, मुझे आपका सवाल समझ नहीं आया। कृपया खेती, मिट्टी, खाद या फसलों से संबंधित प्रश्न पूछें।\n\n` +
+      `उदाहरण के लिए आप ये सवाल पूछ सकते हैं:\n` +
       `1. "प्रति एकड़ कितनी बोरी यूरिया और डीएपी डालें?"\n` +
-      `2. "क्या जिंक और डीएपी को मिलाकर डाल सकते हैं?"\n` +
-      `3. "मेरी मिट्टी में नाइट्रोजन की क्या स्थिति है?"\n` +
-      `4. "मेरी मिट्टी के लिए कौन सी फसल सबसे अच्छी है?"\n` +
-      `5. "मेरी मिट्टी की पूरी रिपोर्ट बताओ"`;
+      `2. "मेरी मिट्टी में नाइट्रोजन की क्या स्थिति है?"\n` +
+      `3. "मेरी मिट्टी के लिए कौन सी फसल सबसे अच्छी है?"`
+    );
   }
 
-  return `Hello ${name}! 🌾 I am your KrishiSaathi ICAR Offline Agronomy Engine.\n\n` +
-    `Connected to active Soil Health Card (${reportTitle}):\n` +
-    `• pH: ${vals.ph ?? 7.2} (${analysis.ratings.ph.label}) | Nitrogen: ${vals.n ?? 185} kg/ha (${analysis.ratings.nitrogen.label})\n` +
-    `• Phosphorus: ${vals.p ?? 18.4} kg/ha (${analysis.ratings.phosphorus.label}) | Potassium: ${vals.k ?? 295} kg/ha (${analysis.ratings.potassium.label})\n\n` +
-    `Here are helpful questions you can ask me offline:\n` +
+  return (
+    `I'm sorry, I didn't understand your question. Please ask something related to farming, soil health, fertilizers, or crops.\n\n` +
+    `Here are 3 example questions you can ask:\n` +
     `1. "How many bags of Urea and DAP per acre?"\n` +
-    `2. "Can I mix Zinc Sulphate with DAP?"\n` +
-    `3. "How is the nitrogen level in my soil?"\n` +
-    `4. "What crops are recommended for my soil?"\n` +
-    `5. "What is my overall soil condition?"`;
+    `2. "How is the nitrogen level in my soil?"\n` +
+    `3. "What crops are recommended for my soil?"`
+  );
+}
+
+export function answerGreeting(lang, farmerName = '') {
+  const name = farmerName ? farmerName.trim() : '';
+
+  if (lang === 'te') {
+    const greeting = name ? `నమస్కారం ${name} గారు! 🙏🌾` : `నమస్కారం! 🙏🌾`;
+    return (
+      `${greeting} కృషిసాథి (KrishiSaathi) సహాయకుడికి స్వాగతం. మీ నేల ఆరోగ్య కార్డు, ఎరువుల మోతాదు లేదా పంటల గురించి ఏదైనా అడగవచ్చు.\n\n` +
+      `ఉదాహరణకు ఈ ప్రశ్నలు అడగవచ్చు:\n` +
+      `1. "ఎకరాకు ఎన్ని బస్తాల యూరియా మరియు DAP వేయాలి?"\n` +
+      `2. "నా నేలలో నత్రజని లోపం గురించి చెప్పు"\n` +
+      `3. "నా నేలకు ఏ పంటలు అనుకూలం?"`
+    );
+  }
+
+  if (lang === 'hi') {
+    const greeting = name ? `नमस्ते ${name} जी! 🙏🌾` : `नमस्ते! 🙏🌾`;
+    return (
+      `${greeting} कृषिशाथी (KrishiSaathi) में आपका स्वागत है। आप अपनी मिट्टी रिपोर्ट, खाद की सही मात्रा या फसलों के बारे में पूछ सकते हैं।\n\n` +
+      `उदाहरण के लिए आप ये सवाल पूछ सकते हैं:\n` +
+      `1. "प्रति एकड़ कितनी बोरी यूरिया और डीएपी डालें?"\n` +
+      `2. "मेरी मिट्टी में नाइट्रोजन की क्या स्थिति है?"\n` +
+      `3. "मेरी मिट्टी के लिए कौन सी फसल सबसे अच्छी है?"`
+    );
+  }
+
+  const greeting = name ? `Hello ${name}! 🌾` : `Hello! 🌾`;
+  return (
+    `${greeting} Welcome to KrishiSaathi. You can ask me questions about your soil health card, fertilizer dosages, or recommended crops.\n\n` +
+    `Here are 3 example questions you can ask:\n` +
+    `1. "How many bags of Urea and DAP per acre?"\n` +
+    `2. "How is the nitrogen level in my soil?"\n` +
+    `3. "What crops are recommended for my soil?"`
+  );
+}
+
+export function answerDefaultFallback(lang) {
+  return answerNotUnderstood(lang);
 }
 
 // ==============================================================================
-// 3. MAIN EXPORT: answerOffline(question, lang, report, farmerName)
+// 4. MAIN EXPORT: answerOffline(question, lang, report, farmerName)
 // ==============================================================================
 export function answerOffline(question, lang = 'te', report = null, farmerName = '') {
-  const analysis = analyzeSoil(report);
-  const reportTitle = report?.title || report?.id || (lang === 'te' ? 'నేల ఆరోగ్య కార్డు' : (lang === 'hi' ? 'मिट्टी स्वास्थ्य कार्ड' : 'Soil Health Card'));
-  const normalizedLang = ['te', 'hi', 'en'].includes(lang) ? lang : 'te';
+  let normalizedLang = ['te', 'hi', 'en'].includes(lang) ? lang : 'te';
+  if (question && typeof question === 'string') {
+    if (TELUGU_SCRIPT_REGEX.test(question)) normalizedLang = 'te';
+    else if (DEVANAGARI_SCRIPT_REGEX.test(question)) normalizedLang = 'hi';
+  }
+
+  if (!question || isGibberishOrInvalid(question)) {
+    return answerNotUnderstood(normalizedLang);
+  }
+
+  if (isGreeting(question)) {
+    return answerGreeting(normalizedLang, farmerName);
+  }
 
   const intent = detectIntent(question);
+  if (intent === 'greeting') {
+    return answerGreeting(normalizedLang, farmerName);
+  }
+  if (intent === 'unrecognized' || intent === 'default_fallback') {
+    return answerNotUnderstood(normalizedLang);
+  }
+
+  const analysis = analyzeSoil(report);
+  const reportTitle = report?.title || report?.id || (normalizedLang === 'te' ? 'నేల ఆరోగ్య కార్డు' : (normalizedLang === 'hi' ? 'मिट्टी स्वास्थ्य कार्ड' : 'Soil Health Card'));
 
   switch (intent) {
     case 'mixing_precautions':
@@ -759,6 +966,6 @@ export function answerOffline(question, lang = 'te', report = null, farmerName =
       return answerOverallCondition(normalizedLang, analysis, reportTitle);
     case 'default_fallback':
     default:
-      return answerDefaultFallback(normalizedLang, analysis, farmerName, reportTitle);
+      return answerNotUnderstood(normalizedLang);
   }
 }
