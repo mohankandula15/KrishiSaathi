@@ -13,12 +13,16 @@ import {
   Radio,
   AlertCircle
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useSoil } from '../context/SoilContext';
 import { api, API_BASE_URL } from '../services/api';
 import { answerOffline } from '../engine/offlineAnswers';
+import { LANGUAGES } from '../i18n/languages';
+import { getTranslatedRating } from '../i18n/dataLookups';
 
 export default function AIAssistantPage() {
+  const { t } = useTranslation();
   const { user, language, setLanguage } = useAuth();
   const { activeReport } = useSoil();
 
@@ -780,34 +784,38 @@ export default function AIAssistantPage() {
 
         </div>
 
-        {/* 2. Language Selection Pills (Telugu, Hindi, English) */}
+        {/* 2. Language Selection Pills (Telugu, Hindi, English, and roadmap) */}
         <div className="pt-2 border-t border-[#E2EBE2] flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Globe className="w-4 h-4 text-[#245C3A]" />
-            <span className="text-xs font-bold text-[#5C6E63]">Choose Your Language:</span>
+            <span className="text-xs font-bold text-[#5C6E63]">{t('assistant.chooseLanguage', 'Choose Your Language:')}</span>
           </div>
 
-          <div className="flex items-center gap-2">
-            {[
-              { code: 'te', label: 'తెలుగు (Telugu)', tag: 'వాయిస్' },
-              { code: 'hi', label: 'हिन्दी (Hindi)', tag: 'आवाज़' },
-              { code: 'en', label: 'English', tag: 'Voice' }
-            ].map(lang => (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {LANGUAGES.map(lang => (
               <button
                 key={lang.code}
                 type="button"
-                onClick={() => handleLanguageChange(lang.code)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
-                  currentLang === lang.code 
-                    ? "bg-[#245C3A] text-white shadow-xs" 
-                    : "bg-[#F8FAF7] hover:bg-[#E8F0E7] text-[#26332B] border border-[#E2EBE2]"
+                disabled={!lang.supported}
+                onClick={() => lang.supported && handleLanguageChange(lang.code)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                  !lang.supported
+                    ? "bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed opacity-60"
+                    : currentLang === lang.code 
+                      ? "bg-[#245C3A] text-white shadow-xs cursor-pointer" 
+                      : "bg-[#F8FAF7] hover:bg-[#E8F0E7] text-[#26332B] border border-[#E2EBE2] cursor-pointer"
                 }`}
+                title={!lang.supported ? `${lang.name} - ${t('common.comingSoon', 'Coming soon')}` : lang.name}
               >
-                <span>{lang.label}</span>
+                <span>{lang.nativeName}</span>
                 <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                  currentLang === lang.code ? "bg-white/20 text-white" : "bg-emerald-100 text-[#245C3A]"
+                  !lang.supported 
+                    ? "bg-stone-200 text-stone-500"
+                    : currentLang === lang.code 
+                      ? "bg-white/20 text-white" 
+                      : "bg-emerald-100 text-[#245C3A]"
                 }`}>
-                  {lang.tag}
+                  {lang.supported ? (lang.code === 'te' ? 'వాయిస్' : lang.code === 'hi' ? 'आवाज़' : 'Voice') : t('common.comingSoon', 'Coming soon')}
                 </span>
               </button>
             ))}
@@ -818,15 +826,15 @@ export default function AIAssistantPage() {
         <div className="p-3 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2] flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-[#5C6E63]">
           <span className="font-bold text-[#245C3A] flex items-center gap-1">
             <ShieldCheck className="w-3.5 h-3.5 text-[#245C3A]" />
-            <span>Soil Context:</span>
+            <span>{t('assistant.soilContext', 'Soil Context:')}</span>
           </span>
-          <span>pH: <strong className="text-[#26332B]">{activeReport?.ph?.value ?? 7.2} ({activeReport?.ph?.rating ?? "Neutral"})</strong></span>
+          <span>{t('nutrients.ph', 'pH')}: <strong className="text-[#26332B]">{activeReport?.ph?.value ?? 7.2} ({getTranslatedRating(activeReport?.ph?.rating || "Neutral", t)})</strong></span>
           <span>•</span>
-          <span>Nitrogen: <strong className="text-[#26332B]">{activeReport?.nutrients?.nitrogen?.value ?? 185} kg/ha (Low)</strong></span>
+          <span>{t('nutrients.nitrogenShort', 'Nitrogen')}: <strong className="text-[#26332B]">{activeReport?.nutrients?.nitrogen?.value ?? 185} kg/ha ({getTranslatedRating(activeReport?.nutrients?.nitrogen?.rating || "Low", t)})</strong></span>
           <span>•</span>
-          <span>Potassium: <strong className="text-[#26332B]">{activeReport?.nutrients?.potassium?.value ?? 295} kg/ha (High)</strong></span>
+          <span>{t('nutrients.potassiumShort', 'Potassium')}: <strong className="text-[#26332B]">{activeReport?.nutrients?.potassium?.value ?? 295} kg/ha ({getTranslatedRating(activeReport?.nutrients?.potassium?.rating || "High", t)})</strong></span>
           <span>•</span>
-          <span>Zinc: <strong className="text-[#26332B]">{activeReport?.secondaryNutrients?.zinc?.value ?? 0.45} ppm (Low)</strong></span>
+          <span>{t('nutrients.zinc', 'Zinc')}: <strong className="text-[#26332B]">{activeReport?.secondaryNutrients?.zinc?.value ?? 0.45} ppm ({getTranslatedRating('Low', t)})</strong></span>
         </div>
 
       </div>

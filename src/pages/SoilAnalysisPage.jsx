@@ -1,21 +1,16 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Sprout, 
   UploadCloud, 
   AlertCircle, 
-  CheckCircle2, 
   Calculator, 
-  Bot, 
   Printer, 
-  ChevronRight,
   ArrowRight,
   ShieldCheck,
-  FileText,
   Activity,
   Layers,
-  Sparkles,
-  Info
+  Sparkles
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -24,41 +19,42 @@ import {
   XAxis, 
   YAxis, 
   CartesianGrid, 
-  Tooltip, 
-  Legend 
+  Tooltip 
 } from 'recharts';
 import { useSoil } from '../context/SoilContext';
+import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { formatLocalDate } from '../i18n/languages';
+import { getSummaryLine, getTranslatedRating, getCardDisplayName } from '../i18n/dataLookups';
 import WhatsAppShareReport from '../components/WhatsAppShareReport';
 
 export default function SoilAnalysisPage() {
   const { t } = useTranslation();
+  const { language } = useAuth();
   const { reports, activeReport, setActiveReportId, setIsUploadModalOpen } = useSoil();
 
   const getRatingText = (rating) => {
-    if (!rating) return '';
-    const key = rating.toLowerCase().replace(/[^a-z]/g, '');
-    return t(`ratings.${key}`, rating);
+    return getTranslatedRating(rating, t);
   };
 
   // NPK comparison chart data
   const npkChartData = [
     {
-      name: "Nitrogen (N)",
+      name: t('nutrients.nitrogen', "Nitrogen (N)"),
       Current: activeReport?.nutrients?.nitrogen?.value || 185,
       Benchmark: activeReport?.nutrients?.nitrogen?.benchmark || 350,
       unit: "kg/ha",
       status: activeReport?.nutrients?.nitrogen?.rating || "Low"
     },
     {
-      name: "Phosphorus (P)",
+      name: t('nutrients.phosphorus', "Phosphorus (P)"),
       Current: activeReport?.nutrients?.phosphorus?.value || 18.4,
       Benchmark: activeReport?.nutrients?.phosphorus?.benchmark || 22,
       unit: "kg/ha",
       status: activeReport?.nutrients?.phosphorus?.rating || "Medium"
     },
     {
-      name: "Potassium (K)",
+      name: t('nutrients.potassium', "Potassium (K)"),
       Current: activeReport?.nutrients?.potassium?.value || 295,
       Benchmark: activeReport?.nutrients?.potassium?.benchmark || 240,
       unit: "kg/ha",
@@ -91,7 +87,7 @@ export default function SoilAnalysisPage() {
                 {t('soilAnalysis.diagnosisBadge', 'Soil Health Diagnosis')}
               </span>
               <span className="text-xs bg-[#F8FAF7] text-[#5C6E63] font-mono px-2.5 py-0.5 rounded-full border border-[#E2EBE2]">
-                {t('common.card', 'Card')} ID: {activeReport?.id}
+                {getCardDisplayName(activeReport, t)}
               </span>
               <span className="text-xs bg-emerald-50 text-[#245C3A] font-bold px-2.5 py-0.5 rounded-full border border-emerald-200">
                 {t('common.score', 'Score')}: {activeReport?.healthScore || 74}/100
@@ -99,11 +95,11 @@ export default function SoilAnalysisPage() {
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-black text-[#26332B] tracking-tight">
-              {activeReport?.title}
+              {getCardDisplayName(activeReport, t)}
             </h1>
 
             <p className="text-xs text-[#5C6E63]">
-              {t('common.location', 'Location')}: <strong>{activeReport?.location}</strong> • {t('soilAnalysis.testedLabel', 'Tested')}: <strong>{activeReport?.sampleDate}</strong> • {t('soilAnalysis.labLabel', 'Laboratory')}: <strong>{activeReport?.labName}</strong>
+              {t('common.location', 'Location')}: <strong>{activeReport?.location}</strong> • {t('soilAnalysis.testedLabel', 'Tested')}: <strong>{formatLocalDate(activeReport?.sampleDate, language)}</strong> • {t('soilAnalysis.labLabel', 'Laboratory')}: <strong>{activeReport?.labName}</strong>
             </p>
           </div>
 
@@ -116,7 +112,7 @@ export default function SoilAnalysisPage() {
             >
               {reports.map((r) => (
                 <option key={r.id} value={r.id}>
-                  {r.title} ({r.id})
+                  {getCardDisplayName(r, t)}
                 </option>
               ))}
             </select>
@@ -150,7 +146,7 @@ export default function SoilAnalysisPage() {
             </div>
             <div>
               <p className="text-xs font-bold text-[#5C6E63] uppercase tracking-wider">{t('soilAnalysis.overallAssessment', 'Overall Diagnostic Assessment')}</p>
-              <p className="text-sm font-black text-[#245C3A]">{activeReport?.overallStatus || "Moderate Soil Fertility"}</p>
+              <p className="text-sm font-black text-[#245C3A]">{getSummaryLine(activeReport, t)}</p>
             </div>
           </div>
 
@@ -190,7 +186,7 @@ export default function SoilAnalysisPage() {
             </p>
           </div>
           <span className="text-xs font-bold text-[#245C3A] bg-[#E8F0E7] px-3 py-1 rounded-full self-start sm:self-auto">
-            Lab Calibrated
+            {t('soilAnalysis.labCalibrated', 'Lab Calibrated')}
           </span>
         </div>
 
@@ -258,16 +254,16 @@ export default function SoilAnalysisPage() {
                 <span className="text-xs font-bold text-[#5C6E63]">kg/ha</span>
               </div>
               <p className="text-[11px] text-[#5C6E63] mt-0.5">
-                Ideal Range: 280 - 560 kg/ha • Deficit: ~165 kg/ha
+                {t('soilAnalysis.idealRange', 'Ideal Range')}: 280 - 560 kg/ha • {t('soilAnalysis.deficit', 'Deficit')}: ~165 kg/ha
               </p>
             </div>
 
             <div className="pt-2 border-t border-[#E2EBE2] space-y-1.5 text-xs">
               <p className="text-[#5C6E63]">
-                <strong className="text-[#26332B]">Crop Symptom:</strong> Reduced tillering, pale yellowing of older lower leaves.
+                <strong className="text-[#26332B]">{t('soilAnalysis.cropSymptom', 'Crop Symptom')}:</strong> {t('dashboard.nSummary', 'Reduced tillering, pale yellowing of older lower leaves.')}
               </p>
               <p className="text-[#245C3A] font-semibold">
-                <strong>Agronomic Protocol:</strong> Apply Neem-coated Urea in 3 split doses (sowing, CRI stage, tillering).
+                <strong>{t('soilAnalysis.agronomicProtocol', 'Agronomic Protocol')}:</strong> {t('soilAnalysis.nProtocol', 'Apply Neem-coated Urea in 3 split doses (sowing, CRI stage, tillering).')}
               </p>
             </div>
           </div>
@@ -291,16 +287,16 @@ export default function SoilAnalysisPage() {
                 <span className="text-xs font-bold text-[#5C6E63]">kg/ha</span>
               </div>
               <p className="text-[11px] text-[#5C6E63] mt-0.5">
-                Ideal Range: 14 - 28 kg/ha • Status: Normal
+                {t('soilAnalysis.idealRange', 'Ideal Range')}: 14 - 28 kg/ha • {t('soilAnalysis.status', 'Status')}: {getRatingText('Normal')}
               </p>
             </div>
 
             <div className="pt-2 border-t border-[#E2EBE2] space-y-1.5 text-xs">
               <p className="text-[#5C6E63]">
-                <strong className="text-[#26332B]">Crop Role:</strong> Stimulates vigorous root elongation and early grain filling.
+                <strong className="text-[#26332B]">{t('soilAnalysis.cropRole', 'Crop Role')}:</strong> {t('soilAnalysis.pRole', 'Stimulates vigorous root elongation and early grain filling.')}
               </p>
               <p className="text-[#245C3A] font-semibold">
-                <strong>Agronomic Protocol:</strong> Apply 45-50 kg DAP per acre through seed drill at sowing time.
+                <strong>{t('soilAnalysis.agronomicProtocol', 'Agronomic Protocol')}:</strong> {t('soilAnalysis.pProtocol', 'Apply 45-50 kg DAP per acre through seed drill at sowing time.')}
               </p>
             </div>
           </div>
@@ -324,16 +320,16 @@ export default function SoilAnalysisPage() {
                 <span className="text-xs font-bold text-[#5C6E63]">kg/ha</span>
               </div>
               <p className="text-[11px] text-[#5C6E63] mt-0.5">
-                Ideal Range: 135 - 280 kg/ha • Status: Abundant
+                {t('soilAnalysis.idealRange', 'Ideal Range')}: 135 - 280 kg/ha • {t('soilAnalysis.status', 'Status')}: {getRatingText('High')}
               </p>
             </div>
 
             <div className="pt-2 border-t border-[#E2EBE2] space-y-1.5 text-xs">
               <p className="text-[#5C6E63]">
-                <strong className="text-[#26332B]">Crop Role:</strong> Provides stalk strength, drought resistance, and grain weight.
+                <strong className="text-[#26332B]">{t('soilAnalysis.cropRole', 'Crop Role')}:</strong> {t('soilAnalysis.kRole', 'Provides stalk strength, drought resistance, and grain weight.')}
               </p>
               <p className="text-[#245C3A] font-semibold">
-                <strong>Agronomic Protocol:</strong> Reduce MOP by 50% to save ₹1,200/acre without sacrificing yield.
+                <strong>{t('soilAnalysis.agronomicProtocol', 'Agronomic Protocol')}:</strong> {t('soilAnalysis.kProtocol', 'Reduce MOP by 50% to save ₹1,200/acre without sacrificing yield.')}
               </p>
             </div>
           </div>
@@ -367,7 +363,7 @@ export default function SoilAnalysisPage() {
             <div>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-black text-[#26332B]">{phValue}</span>
-                <span className="text-xs text-[#5C6E63] font-medium">Optimal: 6.5 - 7.5</span>
+                <span className="text-xs text-[#5C6E63] font-medium">{t('soilAnalysis.idealRange', 'Ideal Range')}: 6.5 - 7.5</span>
               </div>
             </div>
 
@@ -381,9 +377,9 @@ export default function SoilAnalysisPage() {
                 />
               </div>
               <div className="flex justify-between text-[10px] text-[#5C6E63] font-bold">
-                <span>0 (Acidic)</span>
-                <span>7.0 (Neutral)</span>
-                <span>14 (Alkaline)</span>
+                <span>{t('soilAnalysis.scaleAcidic', '0 (Acidic)')}</span>
+                <span>{t('soilAnalysis.scaleNeutral', '7.0 (Neutral)')}</span>
+                <span>{t('soilAnalysis.scaleAlkaline', '14 (Alkaline)')}</span>
               </div>
             </div>
 
@@ -404,7 +400,7 @@ export default function SoilAnalysisPage() {
             <div>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-black text-[#26332B]">{ocValue}%</span>
-                <span className="text-xs text-[#5C6E63] font-medium">Ideal: 0.50% - 0.75%</span>
+                <span className="text-xs text-[#5C6E63] font-medium">{t('soilAnalysis.idealRange', 'Ideal Range')}: 0.50% - 0.75%</span>
               </div>
             </div>
 
@@ -417,9 +413,9 @@ export default function SoilAnalysisPage() {
                 />
               </div>
               <div className="flex justify-between text-[10px] text-[#5C6E63] font-bold">
-                <span>0% (Poor)</span>
-                <span>0.5% (Benchmark)</span>
-                <span>1.0%+ (Rich)</span>
+                <span>{t('soilAnalysis.ocPoor', '0% (Poor)')}</span>
+                <span>{t('soilAnalysis.ocBenchmark', '0.5% (Benchmark)')}</span>
+                <span>{t('soilAnalysis.ocRich', '1.0%+ (Rich)')}</span>
               </div>
             </div>
 
@@ -440,7 +436,7 @@ export default function SoilAnalysisPage() {
             <div>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-black text-[#26332B]">{activeReport?.ec?.value || 0.38}</span>
-                <span className="text-xs text-[#5C6E63] font-medium">dS/m (Ideal: &lt; 1.0)</span>
+                <span className="text-xs text-[#5C6E63] font-medium">dS/m ({t('soilAnalysis.idealRange', 'Ideal Range')}: &lt; 1.0)</span>
               </div>
             </div>
 
@@ -452,14 +448,14 @@ export default function SoilAnalysisPage() {
                 />
               </div>
               <div className="flex justify-between text-[10px] text-[#5C6E63] font-bold">
-                <span>0 (Non-saline)</span>
-                <span>1.0 dS/m (Safe Limit)</span>
-                <span>4.0+ (Saline)</span>
+                <span>{t('soilAnalysis.ecNonSaline', '0 (Non-saline)')}</span>
+                <span>{t('soilAnalysis.ecSafeLimit', '1.0 dS/m (Safe Limit)')}</span>
+                <span>{t('soilAnalysis.ecSaline', '4.0+ (Saline)')}</span>
               </div>
             </div>
 
             <p className="text-xs text-[#5C6E63] leading-relaxed pt-2 border-t border-[#E2EBE2]">
-              Soil salinity is well within the safe range. No salt stress on germinating seeds or vegetative roots.
+              {t('soilAnalysis.salinitySafeAdvisory', 'Soil salinity is well within the safe range. No salt stress on germinating seeds or vegetative roots.')}
             </p>
           </div>
 
@@ -479,7 +475,7 @@ export default function SoilAnalysisPage() {
             </p>
           </div>
           <span className="text-xs font-bold text-[#245C3A] bg-[#E8F0E7] px-3 py-1 rounded-full self-start sm:self-auto">
-            Parts Per Million (ppm)
+            {t('soilAnalysis.ppmIndicator', 'Parts Per Million (ppm)')}
           </span>
         </div>
 
@@ -494,7 +490,7 @@ export default function SoilAnalysisPage() {
               </span>
             </div>
             <p className="text-xl font-black text-amber-950">0.45 <span className="text-[11px] font-normal text-[#5C6E63]">ppm</span></p>
-            <p className="text-[10px] text-amber-800 font-medium">Critical: &lt; 0.60 ppm</p>
+            <p className="text-[10px] text-amber-800 font-medium">{t('soilAnalysis.status', 'Critical')}: &lt; 0.60 ppm</p>
           </div>
 
           {/* Sulphur */}
@@ -506,7 +502,7 @@ export default function SoilAnalysisPage() {
               </span>
             </div>
             <p className="text-xl font-black text-[#26332B]">12.5 <span className="text-[11px] font-normal text-[#5C6E63]">ppm</span></p>
-            <p className="text-[10px] text-[#5C6E63]">Adequate for oilseeds</p>
+            <p className="text-[10px] text-[#5C6E63]">{getRatingText('Sufficient')} ({t('soilAnalysis.viewCrops', 'Crops')})</p>
           </div>
 
           {/* Iron */}
@@ -518,7 +514,7 @@ export default function SoilAnalysisPage() {
               </span>
             </div>
             <p className="text-xl font-black text-[#26332B]">5.4 <span className="text-[11px] font-normal text-[#5C6E63]">ppm</span></p>
-            <p className="text-[10px] text-[#5C6E63]">Benchmark: &gt; 4.5 ppm</p>
+            <p className="text-[10px] text-[#5C6E63]">ICAR: &gt; 4.5 ppm</p>
           </div>
 
           {/* Copper */}
@@ -530,7 +526,7 @@ export default function SoilAnalysisPage() {
               </span>
             </div>
             <p className="text-xl font-black text-[#26332B]">0.78 <span className="text-[11px] font-normal text-[#5C6E63]">ppm</span></p>
-            <p className="text-[10px] text-[#5C6E63]">Benchmark: &gt; 0.20 ppm</p>
+            <p className="text-[10px] text-[#5C6E63]">ICAR: &gt; 0.20 ppm</p>
           </div>
 
           {/* Manganese */}
@@ -542,7 +538,7 @@ export default function SoilAnalysisPage() {
               </span>
             </div>
             <p className="text-xl font-black text-[#26332B]">3.8 <span className="text-[11px] font-normal text-[#5C6E63]">ppm</span></p>
-            <p className="text-[10px] text-[#5C6E63]">Benchmark: &gt; 2.0 ppm</p>
+            <p className="text-[10px] text-[#5C6E63]">ICAR: &gt; 2.0 ppm</p>
           </div>
 
           {/* Boron */}
@@ -554,7 +550,7 @@ export default function SoilAnalysisPage() {
               </span>
             </div>
             <p className="text-xl font-black text-[#26332B]">0.52 <span className="text-[11px] font-normal text-[#5C6E63]">ppm</span></p>
-            <p className="text-[10px] text-[#5C6E63]">Benchmark: &gt; 0.50 ppm</p>
+            <p className="text-[10px] text-[#5C6E63]">ICAR: &gt; 0.50 ppm</p>
           </div>
 
         </div>
@@ -564,7 +560,7 @@ export default function SoilAnalysisPage() {
           <div className="flex items-center gap-2">
             <AlertCircle className="w-5 h-5 shrink-0" />
             <span>
-              <strong>Zinc Correction Notice:</strong> Apply 10 kg Zinc Sulphate (21%) per acre during final plowing. Do not mix Zinc directly with DAP.
+              <strong>{t('soilAnalysis.zincNoticeTitle', 'Zinc Correction Notice:')}</strong> {t('soilAnalysis.zincNoticeDesc', 'Apply 10 kg Zinc Sulphate (21%) per acre during final plowing. Do not mix Zinc directly with DAP.')}
             </span>
           </div>
 

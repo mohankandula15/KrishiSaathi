@@ -13,7 +13,7 @@ export function SoilProvider({ children }) {
     if (saved) {
       try {
         return JSON.parse(saved);
-      } catch (e) {
+      } catch {
         return SAMPLE_SOIL_REPORTS;
       }
     }

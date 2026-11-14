@@ -75,16 +75,16 @@ export default function LandingPage() {
               {/* Trust Badges */}
               <div className="pt-4 grid grid-cols-3 gap-4 border-t border-emerald-700/60 max-w-lg mx-auto lg:mx-0 text-left">
                 <div>
-                  <p className="text-2xl font-black text-white">120,000+</p>
-                  <p className="text-xs text-emerald-200 font-medium">Soil Cards Analyzed</p>
+                  <p className="text-2xl font-black text-white">{t('landing.stats.cardsCount', '120,000+')}</p>
+                  <p className="text-xs text-emerald-200 font-medium">{t('landing.stats.cards', 'Soil Cards Analyzed')}</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-black text-amber-300">₹3,500/acre</p>
-                  <p className="text-xs text-emerald-200 font-medium">Average Input Savings</p>
+                  <p className="text-2xl font-black text-amber-300">{t('landing.stats.savingsValue', '₹3,500/acre')}</p>
+                  <p className="text-xs text-emerald-200 font-medium">{t('landing.stats.savings', 'Average Input Savings')}</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-black text-white">10+ Languages</p>
-                  <p className="text-xs text-emerald-200 font-medium">AI Voice Assistant</p>
+                  <p className="text-2xl font-black text-white">{t('landing.stats.languagesCount', '10+ Languages')}</p>
+                  <p className="text-xs text-emerald-200 font-medium">{t('landing.stats.languages', 'AI Voice Assistant')}</p>
                 </div>
               </div>
             </div>
@@ -93,7 +93,7 @@ export default function LandingPage() {
             <div className="lg:col-span-5">
               <div className="relative mx-auto max-w-md bg-white rounded-3xl p-6 shadow-2xl text-stone-900 border-4 border-white/20">
                 <div className="absolute -top-4 -right-4 bg-amber-500 text-stone-950 px-4 py-1.5 rounded-full font-black text-xs shadow-lg uppercase tracking-wider flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" /> Live AI Preview
+                  <Sparkles className="w-3.5 h-3.5" /> {t('landing.preview.badge', 'Live AI Preview')}
                 </div>
 
                 <div className="flex items-center justify-between pb-4 border-b border-stone-100">
@@ -102,43 +102,43 @@ export default function LandingPage() {
                       <FileCheck className="w-6 h-6" />
                     </div>
                     <div>
-                      <h4 className="font-black text-stone-900 text-sm">Soil Health Card</h4>
-                      <p className="text-xs text-stone-500">Card ID: SHC-PB-2025-0891</p>
+                      <h4 className="font-black text-stone-900 text-sm">{t('landing.preview.cardTitle', 'Soil Health Card')}</h4>
+                      <p className="text-xs text-stone-500">{t('landing.preview.cardId', 'Card ID')}: SHC-PB-2025-0891</p>
                     </div>
                   </div>
                   <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black">
-                    Score: 74/100
+                    {t('landing.preview.score', 'Score: 74/100')}
                   </span>
                 </div>
 
                 <div className="py-4 space-y-3">
                   <div className="bg-stone-50 p-3 rounded-2xl flex items-center justify-between">
                     <div>
-                      <span className="text-xs font-bold text-stone-500">Nitrogen (N)</span>
-                      <p className="text-sm font-black text-red-600">185 kg/ha • Low</p>
+                      <span className="text-xs font-bold text-stone-500">{t('nutrients.nitrogen', 'Nitrogen (N)')}</span>
+                      <p className="text-sm font-black text-red-600">{t('landing.preview.nVal', '185 kg/ha • Low')}</p>
                     </div>
                     <span className="text-xs font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-lg">
-                      Urea 2.2 bags/acre
+                      {t('landing.preview.nAction', 'Urea 2.2 bags/acre')}
                     </span>
                   </div>
 
                   <div className="bg-stone-50 p-3 rounded-2xl flex items-center justify-between">
                     <div>
-                      <span className="text-xs font-bold text-stone-500">Potassium (K₂O)</span>
-                      <p className="text-sm font-black text-emerald-700">295 kg/ha • Sufficient</p>
+                      <span className="text-xs font-bold text-stone-500">{t('nutrients.potassium', 'Potassium (K₂O)')}</span>
+                      <p className="text-sm font-black text-emerald-700">{t('landing.preview.kVal', '295 kg/ha • Sufficient')}</p>
                     </div>
                     <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-lg">
-                      Reduce MOP by 50%
+                      {t('landing.preview.kAction', 'Reduce MOP by 50%')}
                     </span>
                   </div>
 
                   <div className="bg-stone-50 p-3 rounded-2xl flex items-center justify-between">
                     <div>
-                      <span className="text-xs font-bold text-stone-500">Soil pH</span>
-                      <p className="text-sm font-black text-stone-800">7.2 • Optimal Neutral</p>
+                      <span className="text-xs font-bold text-stone-500">{t('nutrients.ph', 'Soil pH')}</span>
+                      <p className="text-sm font-black text-stone-800">{t('landing.preview.phVal', '7.2 • Optimal Neutral')}</p>
                     </div>
                     <span className="text-xs font-bold text-stone-700 bg-stone-200 px-2 py-0.5 rounded-lg">
-                      Ideal for Wheat/Paddy
+                      {t('landing.preview.phAction', 'Ideal for Wheat/Paddy')}
                     </span>
                   </div>
                 </div>
@@ -149,14 +149,14 @@ export default function LandingPage() {
                       <Mic className="w-4 h-4 animate-pulse" />
                     </div>
                     <p className="text-xs font-semibold text-emerald-100 line-clamp-1">
-                      "When and how much Urea should I apply?"
+                      {t('landing.preview.sampleQuestion', '"When and how much Urea should I apply?"')}
                     </p>
                   </div>
                   <Link
                     to="/ai-assistant"
                     className="text-xs font-black text-amber-300 hover:text-white shrink-0 flex items-center gap-1"
                   >
-                    Ask AI <ChevronRight className="w-3.5 h-3.5" />
+                    {t('landing.preview.askAi', 'Ask AI')} <ChevronRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
 
@@ -165,7 +165,7 @@ export default function LandingPage() {
                     to="/soil-analysis"
                     className="w-full py-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm flex items-center justify-center gap-2 transition"
                   >
-                    <span>View Full Soil Analysis</span>
+                    <span>{t('landing.preview.viewAnalysis', 'View Full Soil Analysis')}</span>
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>
@@ -181,13 +181,13 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
             <span className="text-emerald-700 font-bold text-sm tracking-wider uppercase bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-              Simple 4-Step Process
+              {t('landing.howItWorks.tag', 'Simple 4-Step Process')}
             </span>
             <h2 className="text-3xl sm:text-4xl font-black text-stone-900">
-              How KrishiSaathi Works
+              {t('landing.howItWorks.title', 'How KrishiSaathi Works')}
             </h2>
             <p className="text-stone-600 text-base sm:text-lg">
-              Turn your complex soil lab test into actionable farming decisions in under two minutes.
+              {t('landing.howItWorks.subtitle', 'Turn your complex soil lab test into actionable farming decisions in under two minutes.')}
             </p>
           </div>
 
@@ -197,11 +197,11 @@ export default function LandingPage() {
                 1
               </div>
               <h3 className="text-lg font-black text-stone-900 mb-2">
-                Upload Soil Report
+                {t('landing.howItWorks.step1Title', 'Upload Soil Report')}
               </h3>
-              <p className="text-xs font-bold text-emerald-700 mb-2 uppercase">Step 1: Document Upload</p>
+              <p className="text-xs font-bold text-emerald-700 mb-2 uppercase">{t('landing.howItWorks.step1Sub', 'Step 1: Document Upload')}</p>
               <p className="text-sm text-stone-600 leading-relaxed">
-                Take a photo or upload a PDF of your government Soil Health Card or lab test report.
+                {t('landing.howItWorks.step1Desc', 'Take a photo or upload a PDF of your government Soil Health Card or lab test report.')}
               </p>
             </div>
 
@@ -210,11 +210,11 @@ export default function LandingPage() {
                 2
               </div>
               <h3 className="text-lg font-black text-stone-900 mb-2">
-                AI Diagnostic Engine
+                {t('landing.howItWorks.step2Title', 'AI Diagnostic Engine')}
               </h3>
-              <p className="text-xs font-bold text-emerald-700 mb-2 uppercase">Step 2: Instant Analysis</p>
+              <p className="text-xs font-bold text-emerald-700 mb-2 uppercase">{t('landing.howItWorks.step2Sub', 'Step 2: Instant Analysis')}</p>
               <p className="text-sm text-stone-600 leading-relaxed">
-                Our platform extracts N, P, K, pH, organic carbon, and micronutrients like Zinc and Sulphur automatically.
+                {t('landing.howItWorks.step2Desc', 'Our platform extracts N, P, K, pH, organic carbon, and micronutrients like Zinc and Sulphur automatically.')}
               </p>
             </div>
 
@@ -223,11 +223,11 @@ export default function LandingPage() {
                 3
               </div>
               <h3 className="text-lg font-black text-stone-900 mb-2">
-                Balanced Fertilizer Plan
+                {t('landing.howItWorks.step3Title', 'Balanced Fertilizer Plan')}
               </h3>
-              <p className="text-xs font-bold text-emerald-700 mb-2 uppercase">Step 3: Precise Dosages</p>
+              <p className="text-xs font-bold text-emerald-700 mb-2 uppercase">{t('landing.howItWorks.step3Sub', 'Step 3: Precise Dosages')}</p>
               <p className="text-sm text-stone-600 leading-relaxed">
-                Get exact bag quantities per acre for Urea, DAP, and MOP with application timings tailored to your plot size.
+                {t('landing.howItWorks.step3Desc', 'Get exact bag quantities per acre for Urea, DAP, and MOP with application timings tailored to your plot size.')}
               </p>
             </div>
 
@@ -236,11 +236,11 @@ export default function LandingPage() {
                 4
               </div>
               <h3 className="text-lg font-black text-stone-900 mb-2">
-                Voice AI Consultation
+                {t('landing.howItWorks.step4Title', 'Voice AI Consultation')}
               </h3>
-              <p className="text-xs font-bold text-emerald-700 mb-2 uppercase">Step 4: Interactive Assistant</p>
+              <p className="text-xs font-bold text-emerald-700 mb-2 uppercase">{t('landing.howItWorks.step4Sub', 'Step 4: Interactive Assistant')}</p>
               <p className="text-sm text-stone-600 leading-relaxed">
-                Tap the microphone to ask questions in your language and listen to audio responses from your agricultural AI assistant.
+                {t('landing.howItWorks.step4Desc', 'Tap the microphone to ask questions in your language and listen to audio responses from your agricultural AI assistant.')}
               </p>
             </div>
           </div>
@@ -251,7 +251,7 @@ export default function LandingPage() {
               className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-base shadow-md transition"
             >
               <UploadCloud className="w-5 h-5" />
-              <span>Upload Soil Report to Get Started</span>
+              <span>{t('landing.howItWorks.uploadBtn', 'Upload Soil Report to Get Started')}</span>
             </button>
           </div>
         </div>
@@ -262,13 +262,13 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
             <span className="text-amber-700 font-bold text-sm tracking-wider uppercase bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
-              Platform Features
+              {t('landing.features.tag', 'Platform Features')}
             </span>
             <h2 className="text-3xl sm:text-4xl font-black text-stone-900">
-              Comprehensive Soil & Agronomy Intelligence
+              {t('landing.features.title', 'Comprehensive Soil & Agronomy Intelligence')}
             </h2>
             <p className="text-stone-600 text-base sm:text-lg">
-              Combining modern data science with agricultural standards to maximize harvest yield and lower input costs.
+              {t('landing.features.subtitle', 'Combining modern data science with agricultural standards to maximize harvest yield and lower input costs.')}
             </p>
           </div>
 
@@ -278,11 +278,11 @@ export default function LandingPage() {
                 <FileCheck className="w-7 h-7" />
               </div>
               <h3 className="text-xl font-black text-stone-900 mb-2">
-                Soil Card Digitization
+                {t('landing.features.card1Title', 'Soil Card Digitization')}
               </h3>
-              <p className="text-xs font-bold text-emerald-700 mb-3">Instant Automated Parameter Extraction</p>
+              <p className="text-xs font-bold text-emerald-700 mb-3">{t('landing.features.card1Sub', 'Instant Automated Parameter Extraction')}</p>
               <p className="text-sm text-stone-600 leading-relaxed">
-                Digitize paper Soil Health Cards in seconds without tedious manual data entry.
+                {t('landing.features.card1Desc', 'Digitize paper Soil Health Cards in seconds without tedious manual data entry.')}
               </p>
             </div>
 
@@ -291,11 +291,11 @@ export default function LandingPage() {
                 <TrendingUp className="w-7 h-7" />
               </div>
               <h3 className="text-xl font-black text-stone-900 mb-2">
-                NPK Balanced Calculator
+                {t('landing.features.card2Title', 'NPK Balanced Calculator')}
               </h3>
-              <p className="text-xs font-bold text-amber-700 mb-3">Prevent Fertilizer Over-Application</p>
+              <p className="text-xs font-bold text-amber-700 mb-3">{t('landing.features.card2Sub', 'Prevent Fertilizer Over-Application')}</p>
               <p className="text-sm text-stone-600 leading-relaxed">
-                Avoid unnecessary expenditure on fertilizers like Potash when soil reserves are already ample, saving ₹2,000 to ₹4,000 per acre.
+                {t('landing.features.card2Desc', 'Avoid unnecessary expenditure on fertilizers like Potash when soil reserves are already ample, saving ₹2,000 to ₹4,000 per acre.')}
               </p>
             </div>
 
@@ -304,11 +304,11 @@ export default function LandingPage() {
                 <Sprout className="w-7 h-7" />
               </div>
               <h3 className="text-xl font-black text-stone-900 mb-2">
-                Crop Suitability Matcher
+                {t('landing.features.card3Title', 'Crop Suitability Matcher')}
               </h3>
-              <p className="text-xs font-bold text-green-700 mb-3">Data-Backed Crop Selection</p>
+              <p className="text-xs font-bold text-green-700 mb-3">{t('landing.features.card3Sub', 'Data-Backed Crop Selection')}</p>
               <p className="text-sm text-stone-600 leading-relaxed">
-                Recommends certified seed varieties matching your soil pH, texture, and seasonal water availability.
+                {t('landing.features.card3Desc', 'Recommends certified seed varieties matching your soil pH, texture, and seasonal water availability.')}
               </p>
             </div>
 
@@ -317,11 +317,11 @@ export default function LandingPage() {
                 <Mic className="w-7 h-7" />
               </div>
               <h3 className="text-xl font-black text-stone-900 mb-2">
-                Multilingual Voice AI
+                {t('landing.features.card4Title', 'Multilingual Voice AI')}
               </h3>
-              <p className="text-xs font-bold text-sky-700 mb-3">Speak and Listen in Your Language</p>
+              <p className="text-xs font-bold text-sky-700 mb-3">{t('landing.features.card4Sub', 'Speak and Listen in Your Language')}</p>
               <p className="text-sm text-stone-600 leading-relaxed">
-                Designed for accessibility. Ask questions via voice input and listen to synthesized audio advice.
+                {t('landing.features.card4Desc', 'Designed for accessibility. Ask questions via voice input and listen to synthesized audio advice.')}
               </p>
             </div>
 
@@ -330,11 +330,11 @@ export default function LandingPage() {
                 <Droplets className="w-7 h-7" />
               </div>
               <h3 className="text-xl font-black text-stone-900 mb-2">
-                Micronutrient Defect Alarm
+                {t('landing.features.card5Title', 'Micronutrient Defect Alarm')}
               </h3>
-              <p className="text-xs font-bold text-purple-700 mb-3">Early Deficiency Warnings</p>
+              <p className="text-xs font-bold text-purple-700 mb-3">{t('landing.features.card5Sub', 'Early Deficiency Warnings')}</p>
               <p className="text-sm text-stone-600 leading-relaxed">
-                Identifies critical Zinc, Sulphur, and Boron shortages before yield losses or crop diseases occur.
+                {t('landing.features.card5Desc', 'Identifies critical Zinc, Sulphur, and Boron shortages before yield losses or crop diseases occur.')}
               </p>
             </div>
 
@@ -343,11 +343,11 @@ export default function LandingPage() {
                 <ShieldCheck className="w-7 h-7" />
               </div>
               <h3 className="text-xl font-black text-stone-900 mb-2">
-                ICAR Agronomy Rules
+                {t('landing.features.card6Title', 'ICAR Agronomy Rules')}
               </h3>
-              <p className="text-xs font-bold text-orange-700 mb-3">Scientifically Verified Standards</p>
+              <p className="text-xs font-bold text-orange-700 mb-3">{t('landing.features.card6Sub', 'Scientifically Verified Standards')}</p>
               <p className="text-sm text-stone-600 leading-relaxed">
-                All fertilizer ratios and crop parameters align with verified agronomic standards.
+                {t('landing.features.card6Desc', 'All fertilizer ratios and crop parameters align with verified agronomic standards.')}
               </p>
             </div>
           </div>
@@ -361,13 +361,13 @@ export default function LandingPage() {
             
             <div className="lg:col-span-6 space-y-6">
               <span className="text-emerald-700 font-bold text-sm tracking-wider uppercase bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                Why Choose KrishiSaathi
+                {t('landing.whyChoose.tag', 'Why Choose KrishiSaathi')}
               </span>
               <h2 className="text-3xl sm:text-4xl font-black text-stone-900 leading-tight">
-                Built for Farmers, Rooted in Agricultural Realities
+                {t('landing.whyChoose.title', 'Built for Farmers, Rooted in Agricultural Realities')}
               </h2>
               <p className="text-stone-600 text-base leading-relaxed">
-                Generic agricultural software often gives theoretical recommendations in complex units. KrishiSaathi translates soil data into practical bags per acre, saving costs and preserving long-term soil health.
+                {t('landing.whyChoose.subtitle', 'Generic agricultural software often gives theoretical recommendations in complex units. KrishiSaathi translates soil data into practical bags per acre, saving costs and preserving long-term soil health.')}
               </p>
 
               <div className="space-y-4 pt-2">
@@ -376,8 +376,8 @@ export default function LandingPage() {
                     <CheckCircle2 className="w-4 h-4" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-stone-900">Practical Bag Dosages</h4>
-                    <p className="text-sm text-stone-600">Calculates exact commercial fertilizer bags (45 kg Urea, 50 kg DAP) per acre directly tailored to your plot size.</p>
+                    <h4 className="font-bold text-stone-900">{t('landing.whyChoose.point1Title', 'Practical Bag Dosages')}</h4>
+                    <p className="text-sm text-stone-600">{t('landing.whyChoose.point1Desc', 'Calculates exact commercial fertilizer bags (45 kg Urea, 50 kg DAP) per acre directly tailored to your plot size.')}</p>
                   </div>
                 </div>
 
@@ -386,8 +386,8 @@ export default function LandingPage() {
                     <CheckCircle2 className="w-4 h-4" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-stone-900">Preserves Soil Fertility</h4>
-                    <p className="text-sm text-stone-600">Recommends organic carbon enhancements (FYM and green manure) alongside chemical fertilizers to rebuild soil biology.</p>
+                    <h4 className="font-bold text-stone-900">{t('landing.whyChoose.point2Title', 'Preserves Soil Fertility')}</h4>
+                    <p className="text-sm text-stone-600">{t('landing.whyChoose.point2Desc', 'Recommends organic carbon enhancements (FYM and green manure) alongside chemical fertilizers to rebuild soil biology.')}</p>
                   </div>
                 </div>
 
@@ -396,8 +396,8 @@ export default function LandingPage() {
                     <CheckCircle2 className="w-4 h-4" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-stone-900">Zero Literacy Barrier</h4>
-                    <p className="text-sm text-stone-600">Voice-guided AI allows farmers to speak their doubts and receive spoken audio replies.</p>
+                    <h4 className="font-bold text-stone-900">{t('landing.whyChoose.point3Title', 'Zero Literacy Barrier')}</h4>
+                    <p className="text-sm text-stone-600">{t('landing.whyChoose.point3Desc', 'Voice-guided AI allows farmers to speak their doubts and receive spoken audio replies.')}</p>
                   </div>
                 </div>
               </div>
@@ -407,7 +407,7 @@ export default function LandingPage() {
                   to="/soil-analysis"
                   className="px-6 py-3.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm inline-flex items-center gap-2 transition"
                 >
-                  <span>View Sample Analysis</span>
+                  <span>{t('landing.whyChoose.viewSample', 'View Sample Analysis')}</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
@@ -417,30 +417,30 @@ export default function LandingPage() {
             <div className="lg:col-span-6 space-y-4">
               <div className="bg-emerald-50/70 rounded-3xl p-6 border border-emerald-200/80">
                 <p className="text-stone-800 text-sm sm:text-base italic leading-relaxed mb-4">
-                  "Previously, we used to apply 4 bags of urea per acre indiscriminately. When we scanned our soil card with KrishiSaathi, we discovered our potash was already high and nitrogen was lacking. We saved ₹4,200 on inputs and saw higher wheat yields!"
+                  {t('landing.testimonials.quote1', '"Previously, we used to apply 4 bags of urea per acre indiscriminately. When we scanned our soil card with KrishiSaathi, we discovered our potash was already high and nitrogen was lacking. We saved ₹4,200 on inputs and saw higher wheat yields!"')}
                 </p>
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-emerald-700 text-white flex items-center justify-center font-bold text-base">
                     G
                   </div>
                   <div>
-                    <h5 className="font-bold text-stone-900">Gurpreet Singh</h5>
-                    <p className="text-xs text-stone-500">Ludhiana, Punjab • 12 Acres</p>
+                    <h5 className="font-bold text-stone-900">{t('landing.testimonials.author1', 'Gurpreet Singh')}</h5>
+                    <p className="text-xs text-stone-500">{t('landing.testimonials.role1', 'Ludhiana, Punjab • 12 Acres')}</p>
                   </div>
                 </div>
               </div>
 
               <div className="bg-amber-50/70 rounded-3xl p-6 border border-amber-200/80">
                 <p className="text-stone-800 text-sm sm:text-base italic leading-relaxed mb-4">
-                  "Using the voice assistant in my regional language made everything straightforward. The app identified acute zinc deficiency in my black soil before cotton sowing, and the recommended spray saved our harvest."
+                  {t('landing.testimonials.quote2', '"Using the voice assistant in my regional language made everything straightforward. The app identified acute zinc deficiency in my black soil before cotton sowing, and the recommended spray saved our harvest."')}
                 </p>
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-amber-700 text-white flex items-center justify-center font-bold text-base">
                     S
                   </div>
                   <div>
-                    <h5 className="font-bold text-stone-900">Suresh Patil</h5>
-                    <p className="text-xs text-stone-500">Baramati, Maharashtra • 6 Acres</p>
+                    <h5 className="font-bold text-stone-900">{t('landing.testimonials.author2', 'Suresh Patil')}</h5>
+                    <p className="text-xs text-stone-500">{t('landing.testimonials.role2', 'Baramati, Maharashtra • 6 Acres')}</p>
                   </div>
                 </div>
               </div>
@@ -454,23 +454,23 @@ export default function LandingPage() {
       <section className="py-16 bg-gradient-to-r from-emerald-800 to-green-950 text-white text-center">
         <div className="max-w-4xl mx-auto px-4">
           <h2 className="text-3xl sm:text-4xl font-black mb-4">
-            Understand Your Soil & Maximize Yield Today
+            {t('landing.bottomCta.title', 'Understand Your Soil & Maximize Yield Today')}
           </h2>
           <p className="text-emerald-100 text-base sm:text-lg mb-8 max-w-2xl mx-auto">
-            Experience the power of precision agronomy with KrishiSaathi.
+            {t('landing.bottomCta.subtitle', 'Experience the power of precision agronomy with KrishiSaathi.')}
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               to="/register"
               className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-amber-400 hover:bg-amber-500 text-stone-950 font-black text-lg transition shadow-xl"
             >
-              Register Free Account
+              {t('landing.bottomCta.registerBtn', 'Register Free Account')}
             </Link>
             <button
               onClick={() => setIsUploadModalOpen(true)}
               className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold text-lg transition"
             >
-              Upload Soil Report
+              {t('landing.ctaUpload', 'Upload Soil Report')}
             </button>
           </div>
         </div>

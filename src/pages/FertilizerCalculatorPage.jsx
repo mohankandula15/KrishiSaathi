@@ -1,25 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { 
-  Calculator, 
   Printer, 
   AlertCircle, 
-  CheckCircle2, 
-  ArrowRight, 
   ShieldCheck, 
   Sparkles, 
-  DollarSign, 
-  Info,
   Calendar,
   Layers,
   Volume2,
-  RefreshCw,
   AlertTriangle
 } from 'lucide-react';
 import { useSoil } from '../context/SoilContext';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
+import { getCardDisplayName, getTranslatedFertilizer } from '../i18n/dataLookups';
 
 export default function FertilizerCalculatorPage() {
   const { t } = useTranslation();
@@ -186,13 +180,13 @@ export default function FertilizerCalculatorPage() {
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-[#245C3A] bg-[#E8F0E7] px-3 py-1 rounded-full border border-[#D4E3D3]">
-                Precision Agronomy Engine
+                {t('fertilizer.precisionTitle', 'Precision Agronomy Engine')}
               </span>
               <span className="text-xs bg-[#F8FAF7] text-[#5C6E63] font-mono px-2.5 py-0.5 rounded-full border border-[#E2EBE2]">
-                Report: {activeReport?.title || activeReport?.id}
+                {t('common.card', 'Card')}: {getCardDisplayName(activeReport, t)}
               </span>
               <span className="text-xs bg-emerald-50 text-[#245C3A] font-medium px-2.5 py-0.5 rounded-full border border-emerald-200">
-                STCR Calibrated
+                {t('fertilizer.stcrCalibrated', 'STCR Calibrated')}
               </span>
             </div>
 
@@ -212,7 +206,7 @@ export default function FertilizerCalculatorPage() {
               className="px-4 py-2.5 rounded-xl border border-[#E2EBE2] bg-white hover:bg-[#F2F7F1] text-[#26332B] font-bold text-xs flex items-center gap-2 transition cursor-pointer shadow-2xs"
             >
               <Printer className="w-4 h-4 text-[#5C6E63]" />
-              <span>{t('common.print', 'Print Schedule')}</span>
+              <span>{t('fertilizer.printBtn', 'Print Schedule')}</span>
             </button>
           </div>
 
@@ -228,7 +222,7 @@ export default function FertilizerCalculatorPage() {
                 <label className="text-xs font-bold uppercase tracking-wider text-[#5C6E63] block">
                   {t('fertilizer.fieldArea', 'Field Acreage')}
                 </label>
-                <span className="text-[11px] text-[#5C6E63]">Adjust land area to scale exact bag prescriptions</span>
+                <span className="text-[11px] text-[#5C6E63]">{t('fertilizer.acreageDesc', 'Adjust land area to scale exact bag prescriptions')}</span>
               </div>
 
               <div className="flex items-center gap-2">
@@ -251,7 +245,7 @@ export default function FertilizerCalculatorPage() {
                       areaUnit === "acre" ? "bg-[#245C3A] text-white" : "text-[#5C6E63] hover:text-[#26332B]"
                     }`}
                   >
-                    Acres
+                    {t('common.acres', 'Acres')}
                   </button>
                   <button
                     type="button"
@@ -260,7 +254,7 @@ export default function FertilizerCalculatorPage() {
                       areaUnit === "hectare" ? "bg-[#245C3A] text-white" : "text-[#5C6E63] hover:text-[#26332B]"
                     }`}
                   >
-                    Hectares
+                    {t('common.hectares', 'Hectares')}
                   </button>
                 </div>
               </div>
@@ -279,7 +273,7 @@ export default function FertilizerCalculatorPage() {
 
             {/* Quick Presets */}
             <div className="flex flex-wrap items-center gap-2 pt-1">
-              <span className="text-[11px] font-bold text-[#5C6E63]">Quick Presets:</span>
+              <span className="text-[11px] font-bold text-[#5C6E63]">{t('fertilizer.quickPresets', 'Quick Presets:')}</span>
               {presets.map((p) => (
                 <button
                   key={p}
@@ -291,7 +285,7 @@ export default function FertilizerCalculatorPage() {
                       : "bg-white border border-[#E2EBE2] text-[#5C6E63] hover:text-[#26332B]"
                   }`}
                 >
-                  {p} {areaUnit === 'hectare' ? 'Ha' : 'Acres'}
+                  {p} {areaUnit === 'hectare' ? t('common.ha', 'Ha') : t('common.acres', 'Acres')}
                 </button>
               ))}
             </div>
@@ -303,7 +297,7 @@ export default function FertilizerCalculatorPage() {
               <label className="text-xs font-bold uppercase tracking-wider text-[#5C6E63] block">
                 {t('fertilizer.selectCrop', 'Target Crop Cultivated')}
               </label>
-              <span className="text-[11px] text-[#5C6E63]">Select crop to calibrate specific N-P-K nutrient uptake</span>
+              <span className="text-[11px] text-[#5C6E63]">{t('fertilizer.selectCropDesc', 'Select crop to calibrate specific N-P-K nutrient uptake')}</span>
             </div>
 
             <select
@@ -321,7 +315,7 @@ export default function FertilizerCalculatorPage() {
             <div className="p-2.5 rounded-xl bg-white border border-[#E2EBE2] text-[11px] text-[#5C6E63] flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-[#245C3A] shrink-0" />
               <span>
-                ICAR & ANGRAU Recommended Dose of Fertilizer (RDF) active for {selectedCrop}.
+                {t('fertilizer.rdfNotice', { crop: selectedCrop, defaultValue: `ICAR & ANGRAU Recommended Dose of Fertilizer (RDF) active for ${selectedCrop}.` })}
               </span>
             </div>
           </div>
@@ -333,7 +327,7 @@ export default function FertilizerCalculatorPage() {
           <div className="mt-4 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
             <div>
-              <strong className="font-bold">Soil Data Notice:</strong>
+              <strong className="font-bold">{t('dashboard.diagnosisNotice', 'Soil Data Notice:')}</strong>
               <p className="mt-0.5 leading-relaxed">{prescription.warnings[0]}</p>
             </div>
           </div>
@@ -351,13 +345,13 @@ export default function FertilizerCalculatorPage() {
               </div>
               <div>
                 <h3 className="font-black text-base text-[#26332B] flex items-center gap-2">
-                  <span>AI Agronomist Explanation</span>
+                  <span>{t('assistant.title', 'AI Agronomist Explanation')}</span>
                   <span className="text-[10px] font-bold bg-[#245C3A] text-white px-2 py-0.5 rounded-full">
-                    Powered by Gemini AI
+                    {t('assistant.badge', 'Powered by Gemini AI')}
                   </span>
                 </h3>
                 <p className="text-xs text-[#5C6E63]">
-                  Plain-language advice explaining why these exact dosages were calculated for your soil
+                  {t('assistant.subtitle', 'Plain-language advice explaining why these exact dosages were calculated for your soil')}
                 </p>
               </div>
             </div>
@@ -372,7 +366,7 @@ export default function FertilizerCalculatorPage() {
               }`}
             >
               <Volume2 className="w-4 h-4" />
-              <span>{isSpeaking ? "Pause Audio" : "Listen in Audio"}</span>
+              <span>{isSpeaking ? t('whatsapp.pause', 'Pause Audio') : t('whatsapp.listen', 'Listen in Audio')}</span>
             </button>
           </div>
 
@@ -389,22 +383,22 @@ export default function FertilizerCalculatorPage() {
         <div className="bg-white rounded-3xl p-6 border border-[#E2EBE2] shadow-xs flex flex-col justify-between space-y-4">
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase tracking-wider text-[#5C6E63]">Neem Coated Urea</span>
+              <span className="text-xs font-black uppercase tracking-wider text-[#5C6E63]">{t('nutrients.nitrogen', 'Neem Coated Urea')}</span>
               <span className="text-[10px] font-bold bg-[#E8F0E7] text-[#245C3A] px-2 py-0.5 rounded-full">
-                45 kg Bag
+                45 kg {t('fertilizer.bag', 'Bag')}
               </span>
             </div>
             <p className="text-3xl font-black text-[#26332B] pt-1">
-              {prescription?.totals?.urea_bags ?? 0} <span className="text-sm font-bold text-[#5C6E63]">Bags</span>
+              {prescription?.totals?.urea_bags ?? 0} <span className="text-sm font-bold text-[#5C6E63]">{t('fertilizer.bags', 'Bags')}</span>
             </p>
             <p className="text-xs text-[#5C6E63]">
-              Net Weight: <strong>{Math.round((prescription?.totals?.urea_bags || 0) * 45)} kg</strong>
+              {t('fertilizer.netWeight', 'Net Weight')}: <strong>{Math.round((prescription?.totals?.urea_bags || 0) * 45)} kg</strong>
             </p>
           </div>
 
           <div className="pt-3 border-t border-[#E2EBE2] text-xs space-y-1">
             <p className="text-[#5C6E63]">{prescription?.stcr_summary?.nitrogen_adjustment}</p>
-            <p className="text-[#245C3A] font-semibold">Apply in 3 splits (sowing, 21d, 45d)</p>
+            <p className="text-[#245C3A] font-semibold">{t('fertilizer.ureaTiming', 'Apply in 3 splits (sowing, 21d, 45d)')}</p>
           </div>
         </div>
 
@@ -416,20 +410,20 @@ export default function FertilizerCalculatorPage() {
                 {prescription?.totals?.ssp_bags > 0 ? "Single Super Phosphate (SSP)" : "Di-Ammonium Phosphate (DAP)"}
               </span>
               <span className="text-[10px] font-bold bg-[#E8F0E7] text-[#245C3A] px-2 py-0.5 rounded-full">
-                50 kg Bag
+                50 kg {t('fertilizer.bag', 'Bag')}
               </span>
             </div>
             <p className="text-3xl font-black text-[#26332B] pt-1">
-              {prescription?.totals?.ssp_bags > 0 ? prescription.totals.ssp_bags : prescription?.totals?.dap_bags ?? 0} <span className="text-sm font-bold text-[#5C6E63]">Bags</span>
+              {prescription?.totals?.ssp_bags > 0 ? prescription.totals.ssp_bags : prescription?.totals?.dap_bags ?? 0} <span className="text-sm font-bold text-[#5C6E63]">{t('fertilizer.bags', 'Bags')}</span>
             </p>
             <p className="text-xs text-[#5C6E63]">
-              Net Weight: <strong>{Math.round(((prescription?.totals?.ssp_bags > 0 ? prescription.totals.ssp_bags : prescription?.totals?.dap_bags) || 0) * 50)} kg</strong>
+              {t('fertilizer.netWeight', 'Net Weight')}: <strong>{Math.round(((prescription?.totals?.ssp_bags > 0 ? prescription.totals.ssp_bags : prescription?.totals?.dap_bags) || 0) * 50)} kg</strong>
             </p>
           </div>
 
           <div className="pt-3 border-t border-[#E2EBE2] text-xs space-y-1">
             <p className="text-[#5C6E63]">{prescription?.stcr_summary?.phosphorus_adjustment}</p>
-            <p className="text-[#245C3A] font-semibold">100% Basal at sowing (seed drill)</p>
+            <p className="text-[#245C3A] font-semibold">{t('fertilizer.dapTiming', '100% Basal at sowing (seed drill)')}</p>
           </div>
         </div>
 
@@ -437,22 +431,22 @@ export default function FertilizerCalculatorPage() {
         <div className="bg-white rounded-3xl p-6 border border-[#E2EBE2] shadow-xs flex flex-col justify-between space-y-4">
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase tracking-wider text-[#5C6E63]">Muriate of Potash (MOP)</span>
+              <span className="text-xs font-black uppercase tracking-wider text-[#5C6E63]">{t('nutrients.potassium', 'Muriate of Potash (MOP)')}</span>
               <span className="text-[10px] font-bold bg-[#E8F0E7] text-[#245C3A] px-2 py-0.5 rounded-full">
-                50 kg Bag
+                50 kg {t('fertilizer.bag', 'Bag')}
               </span>
             </div>
             <p className="text-3xl font-black text-[#26332B] pt-1">
-              {prescription?.totals?.mop_bags ?? 0} <span className="text-sm font-bold text-[#5C6E63]">Bags</span>
+              {prescription?.totals?.mop_bags ?? 0} <span className="text-sm font-bold text-[#5C6E63]">{t('fertilizer.bags', 'Bags')}</span>
             </p>
             <p className="text-xs text-[#5C6E63]">
-              Net Weight: <strong>{Math.round((prescription?.totals?.mop_bags || 0) * 50)} kg</strong>
+              {t('fertilizer.netWeight', 'Net Weight')}: <strong>{Math.round((prescription?.totals?.mop_bags || 0) * 50)} kg</strong>
             </p>
           </div>
 
           <div className="pt-3 border-t border-[#E2EBE2] text-xs space-y-1">
             <p className="text-[#5C6E63]">{prescription?.stcr_summary?.potassium_adjustment}</p>
-            <p className="text-[#245C3A] font-semibold">Basal at final land preparation</p>
+            <p className="text-[#245C3A] font-semibold">{t('fertilizer.mopTiming', 'Basal at final land preparation')}</p>
           </div>
         </div>
 
@@ -460,22 +454,22 @@ export default function FertilizerCalculatorPage() {
         <div className="bg-white rounded-3xl p-6 border border-[#E2EBE2] shadow-xs flex flex-col justify-between space-y-4">
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase tracking-wider text-[#5C6E63]">Zinc / Conditioners</span>
+              <span className="text-xs font-black uppercase tracking-wider text-[#5C6E63]">{t('nutrients.zinc', 'Zinc / Conditioners')}</span>
               <span className="text-[10px] font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full">
-                Targeted Care
+                {t('ratings.optimal', 'Targeted Care')}
               </span>
             </div>
             <p className="text-3xl font-black text-[#26332B] pt-1">
               {Math.round(fieldAcreage * 10)} <span className="text-sm font-bold text-[#5C6E63]">kg</span>
             </p>
             <p className="text-xs text-[#5C6E63]">
-              Prescription: <strong>Zinc Sulphate (21%)</strong>
+              {t('fertilizer.prescriptionTitle', 'Prescription')}: <strong>Zinc Sulphate (21%)</strong>
             </p>
           </div>
 
           <div className="pt-3 border-t border-[#E2EBE2] text-xs space-y-1">
-            <p className="text-[#5C6E63]">Rate: 10 kg / acre</p>
-            <p className="text-amber-800 font-semibold">Broadcast separately from DAP</p>
+            <p className="text-[#5C6E63]">10 kg / {t('common.acres', 'acre')}</p>
+            <p className="text-amber-800 font-semibold">{t('fertilizer.zincDapWarning', 'Broadcast separately from DAP')}</p>
           </div>
         </div>
 
@@ -486,10 +480,10 @@ export default function FertilizerCalculatorPage() {
         <div className="pb-4 border-b border-[#E2EBE2]">
           <h2 className="text-lg font-black text-[#26332B] flex items-center gap-2">
             <Layers className="w-5 h-5 text-[#245C3A]" />
-            <span>Complete Agronomic Fertilizer Prescriptions</span>
+            <span>{t('fertilizer.prescriptionTitle', 'Complete Agronomic Fertilizer Prescriptions')}</span>
           </h2>
           <p className="text-xs text-[#5C6E63]">
-            Every fertilizer item explicitly justifies its necessity, precise dosage, application method, and critical agronomic precautions.
+            {t('fertilizer.prescriptionDesc', 'Every fertilizer item explicitly justifies its necessity, precise dosage, application method, and critical agronomic precautions.')}
           </p>
         </div>
 
@@ -505,29 +499,29 @@ export default function FertilizerCalculatorPage() {
                     {item.nutrient_deficiency}
                   </span>
                   <h3 className="text-base font-black text-[#26332B] mt-1">
-                    {item.recommended_fertilizer}
+                    {getTranslatedFertilizer(item.recommended_fertilizer, t)}
                   </h3>
                 </div>
 
                 <div className="text-right">
                   <span className="text-sm font-black text-[#245C3A] bg-white px-3 py-1 rounded-xl border border-[#E2EBE2] inline-block">
-                    Total: {item.total_quantity}
+                    {t('common.total', 'Total')}: {item.total_quantity}
                   </span>
-                  <p className="text-[11px] text-[#5C6E63] mt-0.5">Rate: {item.quantity_per_acre}</p>
+                  <p className="text-[11px] text-[#5C6E63] mt-0.5">{item.quantity_per_acre}</p>
                 </div>
               </div>
 
               {/* Detail fields */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                 <div>
-                  <span className="text-[#5C6E63] font-bold block text-[11px]">Why It Is Required:</span>
+                  <span className="text-[#5C6E63] font-bold block text-[11px]">{t('fertilizer.whyRequired', 'Why It Is Required:')}</span>
                   <p className="text-[#26332B] mt-0.5 leading-relaxed">{item.why_required}</p>
                 </div>
                 <div>
-                  <span className="text-[#5C6E63] font-bold block text-[11px]">Application Method & Timing:</span>
+                  <span className="text-[#5C6E63] font-bold block text-[11px]">{t('fertilizer.methodTiming', 'Application Method & Timing:')}</span>
                   <p className="text-[#26332B] mt-0.5 leading-relaxed">
-                    <strong>Method:</strong> {item.application_method} <br />
-                    <strong>Timing:</strong> {item.application_timing}
+                    <strong>{t('fertilizer.method', 'Method:')}</strong> {item.application_method} <br />
+                    <strong>{t('fertilizer.timing', 'Timing:')}</strong> {item.application_timing}
                   </p>
                 </div>
               </div>
@@ -536,7 +530,7 @@ export default function FertilizerCalculatorPage() {
               {item.precautions && (
                 <div className="p-3 rounded-xl bg-white border border-amber-200 text-[11px] text-amber-900 flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                  <span><strong>Precaution:</strong> {item.precautions}</span>
+                  <span><strong>{t('cropRec.farmingPrecautions', 'Precaution:')}</strong> {item.precautions}</span>
                 </div>
               )}
             </div>
@@ -551,14 +545,14 @@ export default function FertilizerCalculatorPage() {
             <div>
               <h2 className="text-lg font-black text-[#26332B] flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-[#245C3A]" />
-                <span>Growth-Stage Split Application Schedule ({fieldAcreage} {areaUnit === 'hectare' ? 'Hectares' : 'Acres'})</span>
+                <span>{t('fertilizer.fertilizerSchedule', 'Growth-Stage Split Application Schedule')} ({fieldAcreage} {areaUnit === 'hectare' ? t('common.hectares', 'Hectares') : t('common.acres', 'Acres')})</span>
               </h2>
               <p className="text-xs text-[#5C6E63]">
-                Splitting nitrogen synchronizes nutrient availability with root vegetative uptake and prevents groundwater leaching.
+                {t('fertilizer.scheduleSubtitle', 'Splitting nitrogen synchronizes nutrient availability with root vegetative uptake and prevents groundwater leaching.')}
               </p>
             </div>
             <span className="text-xs font-bold text-[#245C3A] bg-[#E8F0E7] px-3 py-1 rounded-full self-start sm:self-auto">
-              {prescription.application_schedule.length} Key Growth Stages
+              {prescription.application_schedule.length} {t('fertilizer.keyStages', 'Key Growth Stages')}
             </span>
           </div>
 
@@ -566,11 +560,11 @@ export default function FertilizerCalculatorPage() {
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-[#E2EBE2] text-[#5C6E63] font-bold uppercase tracking-wider">
-                  <th className="pb-3 pr-4">Growth Stage</th>
-                  <th className="pb-3 px-4">Urea Dosage</th>
-                  <th className="pb-3 px-4">Phosphorus (DAP/SSP)</th>
-                  <th className="pb-3 px-4">Potash (MOP)</th>
-                  <th className="pb-3 pl-4">Application Instructions</th>
+                  <th className="pb-3 pr-4">{t('fertilizer.growthStage', 'Growth Stage')}</th>
+                  <th className="pb-3 px-4">{t('fertilizer.ureaBags', 'Urea Dosage')}</th>
+                  <th className="pb-3 px-4">{t('fertilizer.dapBags', 'Phosphorus (DAP/SSP)')}</th>
+                  <th className="pb-3 px-4">{t('fertilizer.mopBags', 'Potash (MOP)')}</th>
+                  <th className="pb-3 pl-4">{t('fertilizer.instructions', 'Application Instructions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E2EBE2] text-[#26332B]">
@@ -580,13 +574,13 @@ export default function FertilizerCalculatorPage() {
                       {split.stage}
                     </td>
                     <td className="py-4 px-4 font-bold text-[#245C3A]">
-                      {split.ureaBags > 0 ? `${split.ureaBags} Bags` : "—"}
+                      {split.ureaBags > 0 ? `${split.ureaBags} ${t('fertilizer.bags', 'Bags')}` : "—"}
                     </td>
                     <td className="py-4 px-4 font-bold">
-                      {split.phosphorusBags > 0 ? `${split.phosphorusBags} Bags` : "—"}
+                      {split.phosphorusBags > 0 ? `${split.phosphorusBags} ${t('fertilizer.bags', 'Bags')}` : "—"}
                     </td>
                     <td className="py-4 px-4 font-bold">
-                      {split.potashBags > 0 ? `${split.potashBags} Bags` : "—"}
+                      {split.potashBags > 0 ? `${split.potashBags} ${t('fertilizer.bags', 'Bags')}` : "—"}
                     </td>
                     <td className="py-4 pl-4 text-[#5C6E63]">
                       {split.instructions}
@@ -611,10 +605,10 @@ export default function FertilizerCalculatorPage() {
             <span className="text-3xl font-black text-[#26332B]">
               ₹{(prescription?.totals?.estimated_cost_inr || 0).toLocaleString('en-IN')}
             </span>
-            <span className="text-xs text-[#5C6E63]">Total for {fieldAcreage} {areaUnit === 'hectare' ? 'Hectares' : 'Acres'}</span>
+            <span className="text-xs text-[#5C6E63]">{t('common.total', 'Total')} {fieldAcreage} {areaUnit === 'hectare' ? t('common.hectares', 'Hectares') : t('common.acres', 'Acres')}</span>
           </div>
           <p className="text-xs text-[#5C6E63] leading-relaxed">
-            Calculated strictly at official Government subsidized retail price caps (Urea ₹266.50/45kg, DAP ₹1,350/50kg, MOP ₹1,700/50kg).
+            {t('fertilizer.subsidizedNote', 'Calculated strictly at official Government subsidized retail price caps (Urea ₹266.50/45kg, DAP ₹1,350/50kg, MOP ₹1,700/50kg).')}
           </p>
         </div>
 
@@ -627,10 +621,10 @@ export default function FertilizerCalculatorPage() {
             <span className="text-3xl font-black text-[#245C3A]">
               ₹{(prescription?.totals?.estimated_savings_inr || 0).toLocaleString('en-IN')}
             </span>
-            <span className="text-xs text-[#245C3A] font-semibold">Saved vs conventional over-use</span>
+            <span className="text-xs text-[#245C3A] font-semibold">{t('fertilizer.savedVsConventional', 'Saved vs conventional over-use')}</span>
           </div>
           <p className="text-xs text-[#245C3A] leading-relaxed">
-            Achieved by deducting DAP Nitrogen from Urea, preventing toxic Potash over-application, and eliminating arbitrary chemical fertilizer purchases.
+            {t('fertilizer.savingsDesc', 'Achieved by deducting DAP Nitrogen from Urea, preventing toxic Potash over-application, and eliminating arbitrary chemical fertilizer purchases.')}
           </p>
         </div>
 
@@ -643,8 +637,8 @@ export default function FertilizerCalculatorPage() {
           <strong className="font-bold text-sm block">{t('fertilizer.precautions', 'Mandatory Agronomy Safety Guidelines')}:</strong>
           <ul className="mt-1.5 list-disc list-inside space-y-1 text-[#5C6E63]">
             <li><strong className="text-amber-900">{t('fertilizer.zincDapWarning', 'CRITICAL: Do NOT mix Zinc Sulphate directly with DAP.')}</strong></li>
-            <li><strong className="text-amber-900">Soil Moisture:</strong> Never apply chemical fertilizers to completely dry soil or during peak afternoon heat; always follow with light irrigation.</li>
-            <li><strong className="text-amber-900">Seed Separation:</strong> Drill fertilizers at least 5 cm below or to the side of the seed furrow to avoid seedling chemical burn.</li>
+            <li><strong className="text-amber-900">{t('fertilizer.soilMoistureTitle', 'Soil Moisture')}:</strong> {t('fertilizer.soilMoistureDesc', 'Never apply chemical fertilizers to completely dry soil or during peak afternoon heat; always follow with light irrigation.')}</li>
+            <li><strong className="text-amber-900">{t('fertilizer.seedSeparationTitle', 'Seed Separation')}:</strong> {t('fertilizer.seedSeparationDesc', 'Drill fertilizers at least 5 cm below or to the side of the seed furrow to avoid seedling chemical burn.')}</li>
           </ul>
         </div>
       </div>

@@ -12,8 +12,10 @@ import {
   Loader2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { login, demoLogin, isLoading: authLoading, authStatus } = useAuth();
@@ -29,19 +31,19 @@ export default function LoginPage() {
     const params = new URLSearchParams(location.search);
     const msg = params.get('message') || sessionStorage.getItem('login_message');
     if (msg) {
-      setError(msg);
+      setError(msg === 'Session expired, please log in again' ? t('login.sessionExpired', msg) : msg);
       sessionStorage.removeItem('login_message');
     }
-  }, [location.search]);
+  }, [location.search, t]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!mobile || mobile.length < 10) {
-      setError('Please enter a valid 10-digit mobile number');
+      setError(t('login.phoneValidation', 'Please enter a valid 10-digit mobile number'));
       return;
     }
     if (!password) {
-      setError('Please enter your password');
+      setError(t('login.passwordValidation', 'Please enter your password'));
       return;
     }
 
@@ -51,7 +53,7 @@ export default function LoginPage() {
       await login(mobile, password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Login failed. Please check credentials.');
+      setError(err.message || t('login.failed', 'Login failed. Please check credentials.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -64,7 +66,7 @@ export default function LoginPage() {
       await demoLogin(profileKey);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Demo login failed. Please retry.');
+      setError(err.message || t('login.demoFailed', 'Demo login failed. Please retry.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -85,10 +87,10 @@ export default function LoginPage() {
         </Link>
         
         <h2 className="text-2xl sm:text-3xl font-black text-stone-900">
-          Farmer Login
+          {t('login.farmerLogin', 'Farmer Login')}
         </h2>
         <p className="mt-2 text-sm text-stone-600">
-          Sign in with your registered mobile number
+          {t('login.signInSubtitle', 'Sign in with your registered mobile number')}
         </p>
       </div>
 
@@ -112,7 +114,7 @@ export default function LoginPage() {
             {/* Mobile Number */}
             <div>
               <label className="block text-xs font-black text-stone-800 uppercase tracking-wider mb-2">
-                Mobile Number
+                {t('login.mobileLabel', 'Mobile Number')}
               </label>
               <div className="relative rounded-2xl shadow-xs">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-500 font-bold text-sm">
@@ -139,14 +141,14 @@ export default function LoginPage() {
             <div>
               <div className="flex justify-between items-center mb-2">
                 <label className="block text-xs font-black text-stone-800 uppercase tracking-wider">
-                  Password
+                  {t('login.passwordLabel', 'Password')}
                 </label>
                 <button 
                   type="button" 
-                  onClick={() => alert('Demo account credentials: Phone 9876543210 / Password: password123. Or simply tap "Ramesh Kumar" below.')} 
+                  onClick={() => alert(t('login.demoCredentialsAlert', 'Demo account credentials: Phone 9876543210 / Password: password123. Or simply tap "Ramesh Kumar" below.'))} 
                   className="text-xs font-bold text-emerald-700 hover:underline cursor-pointer"
                 >
-                  Forgot password?
+                  {t('login.forgotPassword', 'Forgot password?')}
                 </button>
               </div>
               <div className="relative rounded-2xl shadow-xs">
@@ -183,11 +185,11 @@ export default function LoginPage() {
                 {isLoading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>Signing In...</span>
+                    <span>{t('login.signingIn', 'Signing In...')}</span>
                   </>
                 ) : (
                   <>
-                    <span>Login</span>
+                    <span>{t('login.loginBtn', 'Login')}</span>
                     <ArrowRight className="w-5 h-5" />
                   </>
                 )}
@@ -200,11 +202,11 @@ export default function LoginPage() {
             <div className="flex items-center gap-2 mb-3">
               <Sparkles className="w-4 h-4 text-amber-500" />
               <span className="text-xs font-black uppercase text-stone-700 tracking-wider">
-                1-Click Instant Demo Login
+                {t('login.instantDemoTitle', '1-Click Instant Demo Login')}
               </span>
             </div>
             <p className="text-xs text-stone-500 mb-3">
-              Click any profile below to test with preloaded soil and crop data:
+              {t('login.instantDemoSubtitle', 'Click any profile below to test with preloaded soil and crop data:')}
             </p>
 
             <div className="space-y-2">
@@ -220,11 +222,11 @@ export default function LoginPage() {
                   </div>
                   <div>
                     <span className="font-bold text-stone-900">Ramesh Kumar</span>
-                    <p className="text-[10px] text-stone-500">Ludhiana, Punjab • Alluvial Soil (Wheat/Paddy)</p>
+                    <p className="text-[10px] text-stone-500">{t('login.punjabProfileDesc', 'Ludhiana, Punjab • Alluvial Soil (Wheat/Paddy)')}</p>
                   </div>
                 </div>
                 <span className="font-bold text-emerald-800 text-[11px] bg-white px-2 py-0.5 rounded-md border border-emerald-200">
-                  Login →
+                  {t('login.loginBtn', 'Login')} →
                 </span>
               </button>
 
@@ -240,11 +242,11 @@ export default function LoginPage() {
                   </div>
                   <div>
                     <span className="font-bold text-stone-900">Suresh Patil</span>
-                    <p className="text-[10px] text-stone-500">Baramati, Maharashtra • Black Soil (Cotton/Soybean)</p>
+                    <p className="text-[10px] text-stone-500">{t('login.maharashtraProfileDesc', 'Baramati, Maharashtra • Black Soil (Cotton/Soybean)')}</p>
                   </div>
                 </div>
                 <span className="font-bold text-amber-900 text-[11px] bg-white px-2 py-0.5 rounded-md border border-amber-200">
-                  Login →
+                  {t('login.loginBtn', 'Login')} →
                 </span>
               </button>
             </div>
@@ -253,9 +255,9 @@ export default function LoginPage() {
           {/* Register Link */}
           <div className="mt-6 text-center pt-4 border-t border-stone-100">
             <p className="text-sm text-stone-600">
-              New to KrishiSaathi?{' '}
+              {t('login.newToKrishiSaathi', 'New to KrishiSaathi?')}{' '}
               <Link to="/register" className="font-bold text-emerald-700 hover:text-emerald-800 hover:underline">
-                Create an account
+                {t('login.createAccount', 'Create an account')}
               </Link>
             </p>
           </div>
@@ -264,7 +266,7 @@ export default function LoginPage() {
 
         <div className="mt-6 text-center flex items-center justify-center gap-2 text-xs text-stone-500">
           <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          <span>Secure Farmer Data Encryption</span>
+          <span>{t('login.secureEncryption', 'Secure Farmer Data Encryption')}</span>
         </div>
       </div>
     </div>

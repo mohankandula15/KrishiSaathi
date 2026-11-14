@@ -20,6 +20,7 @@ import { useSoil } from '../context/SoilContext';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
+import { getCardDisplayName, getTranslatedCropName, getTranslatedSeason } from '../i18n/dataLookups';
 
 export default function CropRecommendationsPage() {
   const { t } = useTranslation();
@@ -95,13 +96,13 @@ export default function CropRecommendationsPage() {
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-[#245C3A] bg-[#E8F0E7] px-3 py-1 rounded-full border border-[#D4E3D3]">
-                Agronomic Intelligence
+                {t('cropRec.agronomicIntelligence', 'Agronomic Intelligence')}
               </span>
               <span className="text-xs bg-[#F8FAF7] text-[#5C6E63] font-mono px-2.5 py-0.5 rounded-full border border-[#E2EBE2]">
-                Report: {activeReport?.title || activeReport?.id}
+                {t('common.card', 'Card')}: {getCardDisplayName(activeReport, t)}
               </span>
               <span className="text-xs bg-emerald-50 text-[#245C3A] font-medium px-2.5 py-0.5 rounded-full border border-emerald-200">
-                {selectedState} Focus
+                {selectedState}
               </span>
             </div>
 
@@ -129,7 +130,7 @@ export default function CropRecommendationsPage() {
           {/* State Selector */}
           <div className="p-3.5 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2] space-y-1.5">
             <label className="font-bold uppercase tracking-wider text-[#5C6E63] block text-[10px]">
-              State / Region
+              {t('cropRec.stateRegion', 'State / Region')}
             </label>
             <select
               value={selectedState}
@@ -149,7 +150,7 @@ export default function CropRecommendationsPage() {
           {/* District Selector */}
           <div className="p-3.5 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2] space-y-1.5">
             <label className="font-bold uppercase tracking-wider text-[#5C6E63] block text-[10px]">
-              District
+              {t('cropRec.district', 'District')}
             </label>
             {selectedState === "Andhra Pradesh" ? (
               <select
@@ -166,7 +167,7 @@ export default function CropRecommendationsPage() {
                 type="text"
                 value={selectedDistrict}
                 onChange={(e) => setSelectedDistrict(e.target.value)}
-                placeholder="Enter District"
+                placeholder={t('cropRec.enterDistrict', 'Enter District')}
                 className="w-full py-1.5 px-2 bg-white rounded-xl border border-[#E2EBE2] font-bold text-[#26332B] focus:ring-2 focus:ring-[#245C3A] focus:outline-hidden"
               />
             )}
@@ -175,33 +176,33 @@ export default function CropRecommendationsPage() {
           {/* Season Selector */}
           <div className="p-3.5 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2] space-y-1.5">
             <label className="font-bold uppercase tracking-wider text-[#5C6E63] block text-[10px]">
-              Growing Season
+              {t('cropRec.growingSeason', 'Growing Season')}
             </label>
             <select
               value={selectedSeason}
               onChange={(e) => setSelectedSeason(e.target.value)}
               className="w-full py-1.5 px-2 bg-white rounded-xl border border-[#E2EBE2] font-bold text-[#26332B] focus:ring-2 focus:ring-[#245C3A] focus:outline-hidden cursor-pointer"
             >
-              <option value="All">All Seasons</option>
-              <option value="Kharif">Kharif (Monsoon)</option>
-              <option value="Rabi">Rabi (Winter)</option>
-              <option value="Summer">Summer / Zaid</option>
+              <option value="All">{t('cropRec.filters.all', 'All Seasons')}</option>
+              <option value="Kharif">{t('data.seasons.kharif', 'Kharif (Monsoon)')}</option>
+              <option value="Rabi">{t('data.seasons.rabi', 'Rabi (Winter)')}</option>
+              <option value="Summer">{t('data.seasons.zaid', 'Summer / Zaid')}</option>
             </select>
           </div>
 
           {/* Water Availability */}
           <div className="p-3.5 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2] space-y-1.5">
             <label className="font-bold uppercase tracking-wider text-[#5C6E63] block text-[10px]">
-              Irrigation / Water Availability
+              {t('cropRec.irrigationWater', 'Irrigation / Water Availability')}
             </label>
             <select
               value={waterAvailability}
               onChange={(e) => setWaterAvailability(e.target.value)}
               className="w-full py-1.5 px-2 bg-white rounded-xl border border-[#E2EBE2] font-bold text-[#26332B] focus:ring-2 focus:ring-[#245C3A] focus:outline-hidden cursor-pointer"
             >
-              <option value="High">High (Canal / Perennial Supply)</option>
-              <option value="Medium">Medium (Tubewell / Borewell)</option>
-              <option value="Low">Low (Rainfed / Drought Prone)</option>
+              <option value="High">{t('cropRec.waterHigh', 'High (Canal / Perennial Supply)')}</option>
+              <option value="Medium">{t('cropRec.waterMedium', 'Medium (Tubewell / Borewell)')}</option>
+              <option value="Low">{t('cropRec.waterLow', 'Low (Rainfed / Drought Prone)')}</option>
             </select>
           </div>
 
@@ -211,7 +212,7 @@ export default function CropRecommendationsPage() {
         <div className="mt-6 p-4 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2] text-xs text-[#5C6E63] flex items-start gap-3">
           <Info className="w-4 h-4 text-[#245C3A] shrink-0 mt-0.5" />
           <p className="leading-relaxed">
-            <strong>Agronomic Advisory Notice:</strong> Crop suitability rankings are calculated using scientific soil parameters, regional climatic benchmarks, and water availability models. KrishiSaathi does not guarantee yields or incomes, as actual harvest outcomes depend upon micro-weather fluctuations, timely irrigation, pest management, and market prices.
+            <strong>{t('cropRec.disclaimerNotice', 'Agronomic Advisory Notice:')}</strong> {t('cropRec.disclaimerBody', 'Crop suitability rankings are calculated using scientific soil parameters, regional climatic benchmarks, and water availability models. KrishiSaathi does not guarantee yields or incomes, as actual harvest outcomes depend upon micro-weather fluctuations, timely irrigation, pest management, and market prices.')}
           </p>
         </div>
 
@@ -230,7 +231,7 @@ export default function CropRecommendationsPage() {
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-[#5C6E63] bg-[#F8FAF7] px-2.5 py-0.5 rounded-full border border-[#E2EBE2]">
-                      {Array.isArray(crop.seasons) ? crop.seasons.join(" / ") : crop.season} Season
+                      {getTranslatedSeason(Array.isArray(crop.seasons) ? crop.seasons.join(" / ") : crop.season, t)}
                     </span>
                     <span className="text-[10px] font-bold bg-[#E8F0E7] text-[#245C3A] px-2.5 py-0.5 rounded-full">
                       {crop.badge || crop.category}
@@ -238,7 +239,7 @@ export default function CropRecommendationsPage() {
                   </div>
 
                   <h3 className="text-xl font-black text-[#26332B] pt-1">
-                    {crop.name || crop.crop}
+                    {getTranslatedCropName(crop.name || crop.crop, t)}
                   </h3>
                 </div>
 
@@ -267,7 +268,7 @@ export default function CropRecommendationsPage() {
               {(crop.recommended_varieties || crop.recommendedVarieties) && (
                 <div className="space-y-1.5 text-xs">
                   <span className="text-[#5C6E63] font-bold block uppercase tracking-wider text-[11px]">
-                    Recommended Regional Cultivars:
+                    {t('cropRec.recommendedCultivars', 'Recommended Regional Cultivars:')}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {(crop.recommended_varieties || crop.recommendedVarieties).map((v, i) => (
@@ -294,7 +295,7 @@ export default function CropRecommendationsPage() {
                 <div className="mt-3 p-3 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-xs text-amber-900 space-y-1">
                   <strong className="flex items-center gap-1 font-bold text-[11px]">
                     <AlertTriangle className="w-3.5 h-3.5 text-amber-700" />
-                    <span>Key Farming Precautions:</span>
+                    <span>{t('cropRec.farmingPrecautions', 'Key Farming Precautions:')}</span>
                   </strong>
                   <ul className="list-disc list-inside space-y-0.5 text-[11px] text-[#5C6E63]">
                     {crop.precautions.slice(0, 2).map((p, i) => (
@@ -328,10 +329,10 @@ export default function CropRecommendationsPage() {
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E2EBE2] shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
           <h3 className="font-black text-base text-[#26332B]">
-            Need sowing advice for your specific village or field?
+            {t('cropRec.needSowingAdvice', 'Need sowing advice for your specific village or field?')}
           </h3>
           <p className="text-xs text-[#5C6E63]">
-            Ask our AI Voice Assistant for seed treatment formulas, sowing depth, and pest scouting advice.
+            {t('cropRec.askVoiceAssistant', 'Ask our AI Voice Assistant for seed treatment formulas, sowing depth, and pest scouting advice.')}
           </p>
         </div>
 

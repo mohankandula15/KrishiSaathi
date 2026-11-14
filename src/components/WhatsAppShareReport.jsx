@@ -5,7 +5,6 @@ import {
   Check, 
   Volume2, 
   VolumeX, 
-  Phone, 
   User, 
   MapPin, 
   AlertCircle, 
@@ -394,11 +393,11 @@ export default function WhatsAppShareReport({
                 type="text"
                 value={farmerName}
                 onChange={(e) => setFarmerName(e.target.value)}
-                placeholder="Farmer name"
+                placeholder={t("whatsapp.nameLabel", "Farmer Name")}
                 className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-[#E2EBE2] bg-[#F8FAF7] text-xs font-bold text-[#26332B] placeholder:text-[#5C6E63]/60 focus:bg-white focus:ring-2 focus:ring-[#245C3A] focus:outline-hidden transition"
               />
             </div>
-            <p className="text-[10px] text-[#5C6E63]">Shown on advisory header</p>
+            <p className="text-[10px] text-[#5C6E63]">{t("whatsapp.shownOnAdvisory", "Shown on advisory header")}</p>
           </div>
 
           {/* Village Input */}
@@ -412,11 +411,11 @@ export default function WhatsAppShareReport({
                 type="text"
                 value={village}
                 onChange={(e) => setVillage(e.target.value)}
-                placeholder="Village / Location"
+                placeholder={t("whatsapp.villageLabel", "Village / Location")}
                 className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-[#E2EBE2] bg-[#F8FAF7] text-xs font-bold text-[#26332B] placeholder:text-[#5C6E63]/60 focus:bg-white focus:ring-2 focus:ring-[#245C3A] focus:outline-hidden transition"
               />
             </div>
-            <p className="text-[10px] text-[#5C6E63]">Shown on advisory header</p>
+            <p className="text-[10px] text-[#5C6E63]">{t("whatsapp.shownOnAdvisory", "Shown on advisory header")}</p>
           </div>
 
         </div>
@@ -426,7 +425,7 @@ export default function WhatsAppShareReport({
           <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2.5 animate-in fade-in">
             <WifiOff className="w-4 h-4 shrink-0 text-amber-700 mt-0.5" />
             <div>
-              <p className="font-bold text-amber-950">Notice</p>
+              <p className="font-bold text-amber-950">{t("common.notice", "Notice")}</p>
               <p className="text-amber-900 mt-0.5">{offlineNotice}</p>
             </div>
           </div>
@@ -508,7 +507,7 @@ export default function WhatsAppShareReport({
             className="ml-auto px-3 py-3 rounded-2xl text-[#5C6E63] hover:text-[#26332B] hover:bg-[#F8FAF7] text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
           >
             <FileText className="w-3.5 h-3.5" />
-            <span>{showPreview ? 'Hide Preview' : 'Show Preview'}</span>
+            <span>{showPreview ? t('whatsapp.hidePreview', 'Hide Preview') : t('whatsapp.showPreview', 'Show Preview')}</span>
             {showPreview ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </button>
 
@@ -523,7 +522,7 @@ export default function WhatsAppShareReport({
                 {t("whatsapp.previewTitle", "WhatsApp Message Preview")}
               </span>
               <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded-md border border-[#E2EBE2]">
-                {reportText.length} / 1500 characters
+                {reportText.length} / 1500 {t('whatsapp.charCount', 'characters')}
               </span>
             </div>
 

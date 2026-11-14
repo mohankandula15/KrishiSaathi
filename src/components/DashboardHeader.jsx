@@ -12,7 +12,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSoil } from '../context/SoilContext';
-import { SUPPORTED_LANGUAGES } from '../data/sampleSoilReports';
+import { LANGUAGES } from '../i18n/languages';
+import { getCardDisplayName } from '../i18n/dataLookups';
 
 export default function DashboardHeader({ setMobileOpen }) {
   const { t } = useTranslation();
@@ -68,7 +69,8 @@ export default function DashboardHeader({ setMobileOpen }) {
   };
 
   const pageInfo = getPageInfo();
-  const currentLangObj = SUPPORTED_LANGUAGES.find(l => l.code === language) || SUPPORTED_LANGUAGES[0];
+  const currentLangObj = LANGUAGES.find(l => l.code === language) || LANGUAGES[0];
+  const activeCardTitle = getCardDisplayName(activeReport, t);
 
   return (
     <header className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-[#E2EBE2] px-4 sm:px-6 lg:px-8 py-3.5 transition-all">
@@ -107,14 +109,14 @@ export default function DashboardHeader({ setMobileOpen }) {
                 setLangMenuOpen(false);
               }}
               className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#F8FAF7] hover:bg-[#E8F0E7] border border-[#E2EBE2] text-xs font-semibold text-[#26332B] transition cursor-pointer"
-              title="Active Soil Report"
+              title={activeCardTitle}
             >
-              <FileText className="w-4 h-4 text-[#245C3A]" />
+              <FileText className="w-4 h-4 text-[#245C3A] shrink-0" />
               <span className="hidden md:inline font-bold">{t("common.card", "Card")}:</span>
-              <span className="truncate max-w-[100px] sm:max-w-[140px] font-mono font-medium">
-                {activeReport?.id}
+              <span className="truncate max-w-[110px] sm:max-w-[150px] font-semibold">
+                {activeCardTitle}
               </span>
-              <ChevronDown className="w-3.5 h-3.5 text-[#5C6E63]" />
+              <ChevronDown className="w-3.5 h-3.5 text-[#5C6E63] shrink-0" />
             </button>
 
             {reportMenuOpen && (
@@ -128,27 +130,30 @@ export default function DashboardHeader({ setMobileOpen }) {
                   </span>
                 </div>
                 <div className="max-h-60 overflow-y-auto py-1">
-                  {reports.map((rep) => (
-                    <button
-                      key={rep.id}
-                      type="button"
-                      onClick={() => {
-                        setActiveReportId(rep.id);
-                        setReportMenuOpen(false);
-                      }}
-                      className={`w-full text-left px-3.5 py-2.5 text-xs flex items-center justify-between hover:bg-[#F2F7F1] transition cursor-pointer ${
-                        rep.id === activeReport?.id ? "bg-[#E8F0E7] text-[#245C3A] font-bold" : "text-[#26332B]"
-                      }`}
-                    >
-                      <div className="min-w-0">
-                        <p className="font-bold truncate">{rep.title}</p>
-                        <p className="text-[11px] text-[#5C6E63] font-mono">{rep.id} • {t("common.score", "Score")}: {rep.healthScore}/100</p>
-                      </div>
-                      {rep.id === activeReport?.id && (
-                        <Check className="w-4 h-4 text-[#245C3A] shrink-0" />
-                      )}
-                    </button>
-                  ))}
+                  {reports.map((rep) => {
+                    const repTitle = getCardDisplayName(rep, t);
+                    return (
+                      <button
+                        key={rep.id}
+                        type="button"
+                        onClick={() => {
+                          setActiveReportId(rep.id);
+                          setReportMenuOpen(false);
+                        }}
+                        className={`w-full text-left px-3.5 py-2.5 text-xs flex items-center justify-between hover:bg-[#F2F7F1] transition cursor-pointer ${
+                          rep.id === activeReport?.id ? "bg-[#E8F0E7] text-[#245C3A] font-bold" : "text-[#26332B]"
+                        }`}
+                      >
+                        <div className="min-w-0 pr-2">
+                          <p className="font-bold truncate">{repTitle}</p>
+                          <p className="text-[11px] text-[#5C6E63]">{t("common.score", "Score")}: {rep.healthScore || 74}/100</p>
+                        </div>
+                        {rep.id === activeReport?.id && (
+                          <Check className="w-4 h-4 text-[#245C3A] shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -196,22 +201,36 @@ export default function DashboardHeader({ setMobileOpen }) {
                 <div className="px-3.5 py-1.5 border-b border-[#E2EBE2] text-[11px] font-bold uppercase tracking-wider text-[#5C6E63]">
                   {t("header.selectLanguage", "Select Language")}
                 </div>
-                <div className="max-h-60 overflow-y-auto py-1">
-                  {SUPPORTED_LANGUAGES.map((lang) => (
+                <div className="max-h-64 overflow-y-auto py-1">
+                  {LANGUAGES.map((lang) => (
                     <button
                       key={lang.code}
                       type="button"
+                      disabled={!lang.supported}
                       onClick={() => {
-                        setLanguage(lang.code);
-                        setLangMenuOpen(false);
+                        if (lang.supported) {
+                          setLanguage(lang.code);
+                          setLangMenuOpen(false);
+                        }
                       }}
-                      className={`w-full text-left px-3.5 py-2 text-xs flex items-center justify-between hover:bg-[#F2F7F1] transition cursor-pointer ${
-                        language === lang.code ? "bg-[#E8F0E7] text-[#245C3A] font-bold" : "text-[#26332B]"
+                      className={`w-full text-left px-3.5 py-2 text-xs flex items-center justify-between transition ${
+                        !lang.supported
+                          ? "opacity-50 cursor-not-allowed text-[#5C6E63]"
+                          : language === lang.code 
+                            ? "bg-[#E8F0E7] text-[#245C3A] font-bold cursor-pointer" 
+                            : "text-[#26332B] hover:bg-[#F2F7F1] cursor-pointer"
                       }`}
                     >
-                      <span>{lang.name}</span>
-                      {language === lang.code && (
-                        <Check className="w-4 h-4 text-[#245C3A]" />
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="truncate">{lang.name}</span>
+                        {!lang.supported && (
+                          <span className="text-[9px] bg-stone-100 text-stone-500 font-bold px-1.5 py-0.2 rounded-full whitespace-nowrap">
+                            {t("common.comingSoon", "Coming soon")}
+                          </span>
+                        )}
+                      </div>
+                      {language === lang.code && lang.supported && (
+                        <Check className="w-4 h-4 text-[#245C3A] shrink-0" />
                       )}
                     </button>
                   ))}

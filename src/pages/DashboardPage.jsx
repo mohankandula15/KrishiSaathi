@@ -6,7 +6,6 @@ import {
   UploadCloud, 
   FileText, 
   Bot, 
-  TrendingUp, 
   AlertCircle, 
   ArrowRight, 
   Mic, 
@@ -14,18 +13,25 @@ import {
   MapPin, 
   CloudSun, 
   Plus, 
-  CheckCircle2, 
   ChevronRight,
   ShieldCheck,
-  Sparkles,
   Calculator
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSoil } from '../context/SoilContext';
+import { formatLocalDate } from '../i18n/languages';
+import { 
+  getCardDisplayName, 
+  getSummaryLine, 
+  getTranslatedSoilType, 
+  getTranslatedCropName, 
+  getTranslatedFertilizer, 
+  getDemoCardMeta 
+} from '../i18n/dataLookups';
 
 export default function DashboardPage() {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, language } = useAuth();
   const { reports, activeReport, setActiveReportId, setIsUploadModalOpen } = useSoil();
   const navigate = useNavigate();
 
@@ -102,9 +108,9 @@ export default function DashboardPage() {
                 {locationText}
               </span>
               <span>•</span>
-              <span>Farm Size: <strong className="text-[#26332B]">{farmSize}</strong></span>
+              <span>{t("dashboard.farmSize", "Farm Size")}: <strong className="text-[#26332B]">{farmSize}</strong></span>
               <span>•</span>
-              <span>Primary Crop: <strong className="text-[#26332B]">{primaryCrop}</strong></span>
+              <span>{t("dashboard.primaryCrop", "Primary Crop")}: <strong className="text-[#26332B]">{primaryCrop}</strong></span>
             </div>
           </div>
 
@@ -135,24 +141,24 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3 p-3 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2]">
             <CloudSun className="w-6 h-6 text-amber-700 shrink-0" />
             <div>
-              <p className="font-bold text-[#26332B]">Weather: 24°C • Clear Sky</p>
-              <p className="text-[#5C6E63] text-[11px]">Humidity: 58% • Rain Probability: 5%</p>
+              <p className="font-bold text-[#26332B]">{t("dashboard.weatherClear", "Weather: 24°C • Clear Sky")}</p>
+              <p className="text-[#5C6E63] text-[11px]">{t("dashboard.weatherSub", "Humidity: 58% • Rain Probability: 5%")}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3 p-3 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2]">
             <Calendar className="w-6 h-6 text-[#245C3A] shrink-0" />
             <div>
-              <p className="font-bold text-[#26332B]">Current Season: Rabi Season</p>
-              <p className="text-[#5C6E63] text-[11px]">CRI Stage window for wheat irrigation & top dressing</p>
+              <p className="font-bold text-[#26332B]">{t("dashboard.rabiSeason", "Current Season: Rabi Season")}</p>
+              <p className="text-[#5C6E63] text-[11px]">{t("dashboard.seasonSub", "CRI Stage window for wheat irrigation & top dressing")}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3 p-3 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2]">
             <ShieldCheck className="w-6 h-6 text-[#245C3A] shrink-0" />
             <div>
-              <p className="font-bold text-[#26332B]">{t("common.card", "Card")}: {activeReport?.id}</p>
-              <p className="text-[#5C6E63] text-[11px]">{t("common.date", "Tested")}: {activeReport?.sampleDate} • {activeReport?.soilType}</p>
+              <p className="font-bold text-[#26332B]">{t("common.card", "Card")}: {getCardDisplayName(activeReport, t)}</p>
+              <p className="text-[#5C6E63] text-[11px]">{t("common.date", "Tested")}: {formatLocalDate(activeReport?.sampleDate, language)} • {getTranslatedSoilType(activeReport?.soilType, t)}</p>
             </div>
           </div>
         </div>
@@ -168,21 +174,21 @@ export default function DashboardPage() {
                 {t("soilAnalysis.diagnosisBadge", "Soil Health Overview")}
               </span>
               <span className="text-xs bg-[#F2F7F1] text-[#5C6E63] font-medium px-2.5 py-0.5 rounded-full border border-[#E2EBE2]">
-                {t("common.card", "Card")}: {activeReport?.id}
+                {t("common.card", "Card")}: {getCardDisplayName(activeReport, t)}
               </span>
             </div>
 
             <h2 className="text-xl sm:text-2xl font-black text-[#26332B]">
-              {activeReport?.title}
+              {getCardDisplayName(activeReport, t)}
             </h2>
 
             <p className="text-xs text-[#5C6E63] leading-relaxed">
-              Tested at <strong>{activeReport?.labName}</strong> on {activeReport?.sampleDate}. Soil classification: <strong>{activeReport?.soilType}</strong>.
+              {t("soilAnalysis.testedLabel", "Tested")}: <strong>{getDemoCardMeta(activeReport, t).labName || activeReport?.labName}</strong> {t("common.date", "on")} {formatLocalDate(activeReport?.sampleDate, language)}. {t("myFarm.primarySoil", "Soil classification")}: <strong>{getTranslatedSoilType(activeReport?.soilType, t)}</strong>.
             </p>
 
             <div className="p-3.5 rounded-2xl bg-[#E8F0E7] text-[#245C3A] text-xs font-semibold flex items-center gap-2.5 border border-[#D4E3D3]">
               <AlertCircle className="w-4 h-4 text-[#245C3A] shrink-0" />
-              <span>Diagnosis: <strong>{activeReport?.overallStatus || "Moderate - Action Advised"}</strong></span>
+              <span>{t("dashboard.diagnosisNotice", "Diagnosis")}: <strong>{getSummaryLine(activeReport, t)}</strong></span>
             </div>
           </div>
 
@@ -230,7 +236,7 @@ export default function DashboardPage() {
                 {healthScore >= 80 ? t("ratings.optimal", "Optimal Fertility") : healthScore >= 60 ? t("ratings.medium", "Moderate Fertility") : t("ratings.low", "Low Fertility")}
               </p>
               <p className="text-[11px] text-[#5C6E63] max-w-[160px]">
-                Fertilizer calibration can elevate score to 88+.
+                {t("dashboard.healthScoreDesc", "Overall soil vitality calibrated to ICAR standards")}
               </p>
             </div>
           </div>
@@ -245,12 +251,12 @@ export default function DashboardPage() {
                 {t("dashboard.nutrientStatus", "Key Nutrient Status Summary")}
               </h3>
               <p className="text-xs text-[#5C6E63]">
-                Summary of primary elements without technical clutter
+                {t("dashboard.nutrientStatusDesc", "Summary of primary elements without technical clutter")}
               </p>
             </div>
 
             <span className="text-xs font-bold text-[#245C3A] bg-[#E8F0E7] px-2.5 py-1 rounded-full">
-              4 Core Indicators
+              {t("dashboard.fourCoreIndicators", "4 Core Indicators")}
             </span>
           </div>
 
@@ -271,7 +277,7 @@ export default function DashboardPage() {
                 })()}
               </div>
               <p className="text-xs text-[#26332B] font-medium leading-relaxed">
-                Deficient in topsoil. Split doses of Neem-coated Urea required.
+                {t("dashboard.nSummary", "Deficient in topsoil. Split doses of Neem-coated Urea required.")}
               </p>
             </div>
 
@@ -290,7 +296,7 @@ export default function DashboardPage() {
                 })()}
               </div>
               <p className="text-xs text-[#26332B] font-medium leading-relaxed">
-                Adequate for root growth. Standard DAP basal dosage is sufficient.
+                {t("dashboard.pSummary", "Adequate for root growth. Standard DAP basal dosage is sufficient.")}
               </p>
             </div>
 
@@ -309,7 +315,7 @@ export default function DashboardPage() {
                 })()}
               </div>
               <p className="text-xs text-[#26332B] font-medium leading-relaxed">
-                Abundant natural reserves. Reduce MOP by 50% to save input cost.
+                {t("dashboard.kSummary", "Abundant natural reserves. Reduce MOP by 50% to save input cost.")}
               </p>
             </div>
 
@@ -323,7 +329,7 @@ export default function DashboardPage() {
                 </span>
               </div>
               <p className="text-xs text-[#26332B] font-medium leading-relaxed">
-                Good foundation. Adding FYM/compost will raise biological activity.
+                {t("dashboard.overallSummary", "Good foundation. Adding FYM/compost will raise biological activity.")}
               </p>
             </div>
 
@@ -332,14 +338,14 @@ export default function DashboardPage() {
           {/* Prominent View Detailed Soil Report Button */}
           <div className="mt-6 pt-6 border-t border-[#E2EBE2] flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-xs text-[#5C6E63] text-center sm:text-left">
-              Detailed NPK values, 0-14 pH curve, Organic Carbon % and micronutrient charts are organized on the analysis page.
+              {t("dashboard.detailedChartNotice", "Detailed NPK values, 0-14 pH curve, Organic Carbon % and micronutrient charts are organized on the analysis page.")}
             </p>
 
             <Link
               to="/soil-analysis"
               className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-[#245C3A] hover:bg-[#1B462C] text-white font-black text-xs flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition active:scale-98 whitespace-nowrap cursor-pointer"
             >
-              <span>{t("soilAnalysis.diagnosisBadge", "View Detailed Soil Report")}</span>
+              <span>{t("dashboard.viewDetailedReport", "View Detailed Soil Report")}</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -363,7 +369,7 @@ export default function DashboardPage() {
                     {t("cropRec.title", "Recommended Crops")}
                   </h3>
                   <p className="text-xs text-[#5C6E63]">
-                    Matched to your pH ({activeReport?.ph?.value}) and soil type
+                    {t("dashboard.matchedToPh", "Matched to your pH ({{ph}}) and soil type", { ph: activeReport?.ph?.value || 7.2 })}
                   </p>
                 </div>
               </div>
@@ -385,7 +391,7 @@ export default function DashboardPage() {
                 >
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-black text-sm text-[#26332B] truncate">{crop.crop}</span>
+                      <span className="font-black text-sm text-[#26332B] truncate">{getTranslatedCropName(crop.crop, t)}</span>
                       <span className="text-[10px] font-bold bg-[#E8F0E7] text-[#245C3A] px-2 py-0.5 rounded-full shrink-0">
                         {crop.suitability}% {t("cropRec.matchScore", "Match")}
                       </span>
@@ -427,7 +433,7 @@ export default function DashboardPage() {
                     {t("fertilizer.prescriptionTitle", "Fertilizer Dosage Plan")}
                   </h3>
                   <p className="text-xs text-[#5C6E63]">
-                    Per-acre calibrated doses based on soil deficiency
+                    {t("dashboard.perAcreDoses", "Per-acre calibrated doses based on soil deficiency")}
                   </p>
                 </div>
               </div>
@@ -448,7 +454,7 @@ export default function DashboardPage() {
                   className="p-3.5 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2] flex items-center justify-between gap-3"
                 >
                   <div className="min-w-0">
-                    <p className="font-black text-xs text-[#26332B] truncate">{item.fertilizer}</p>
+                    <p className="font-black text-xs text-[#26332B] truncate">{getTranslatedFertilizer(item.fertilizer, t)}</p>
                     <p className="text-[11px] text-[#5C6E63] truncate">{item.timing}</p>
                   </div>
                   <div className="text-right shrink-0">
@@ -464,7 +470,7 @@ export default function DashboardPage() {
           <div className="pt-5 mt-5 border-t border-[#E2EBE2]">
             <div className="p-3 bg-[#E8F0E7] rounded-xl border border-[#D4E3D3] flex items-center justify-between text-xs text-[#245C3A] mb-3">
               <span className="font-bold">{t("fertilizer.savingsTip", "Estimated Cost Savings")}:</span>
-              <span className="font-black text-sm">₹3,200 per acre</span>
+              <span className="font-black text-sm">₹3,200 {t("fertilizer.perAcre", "per acre")}</span>
             </div>
 
             <Link
@@ -490,7 +496,7 @@ export default function DashboardPage() {
                 <Bot className="w-6 h-6" />
               </div>
               <span className="text-[11px] font-bold bg-white/15 px-2.5 py-0.5 rounded-full text-emerald-200 uppercase tracking-wider">
-                Voice & Text
+                {t("assistant.badge", "Voice & Text")}
               </span>
             </div>
 
@@ -509,14 +515,14 @@ export default function DashboardPage() {
                 onClick={() => navigate('/ai-assistant')}
                 className="w-full text-left p-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-xs text-emerald-100 transition cursor-pointer"
               >
-                🌾 "When should I apply the first urea dose for wheat?"
+                🌾 {t("landing.preview.sampleQuestion", "\"When and how much Urea should I apply?\"")}
               </button>
               <button
                 type="button"
                 onClick={() => navigate('/ai-assistant')}
                 className="w-full text-left p-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-xs text-emerald-100 transition cursor-pointer"
               >
-                ⚡ "Can I mix Zinc Sulphate and DAP together?"
+                ⚡ {t("fertilizer.zincDapWarning", "CRITICAL: Do NOT mix Zinc Sulphate directly with DAP.")}
               </button>
             </div>
           </div>
@@ -541,7 +547,7 @@ export default function DashboardPage() {
                   {t("dashboard.activeCard", "Saved Soil Health Cards")}
                 </h3>
                 <p className="text-xs text-[#5C6E63]">
-                  Switch active report to update recommendations across the dashboard
+                  {t("dashboard.savedCardsSub", "Switch active report to update recommendations across the dashboard")}
                 </p>
               </div>
 
@@ -551,7 +557,7 @@ export default function DashboardPage() {
                 className="px-3 py-1.5 rounded-xl bg-[#E8F0E7] hover:bg-[#D4E3D3] text-[#245C3A] font-bold text-xs flex items-center gap-1.5 transition cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Add Report</span>
+                <span>{t("dashboard.addReport", "Add Report")}</span>
               </button>
             </div>
 
@@ -573,15 +579,15 @@ export default function DashboardPage() {
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="font-black text-xs text-[#26332B] truncate">{report.title}</p>
+                        <p className="font-black text-xs text-[#26332B] truncate">{getCardDisplayName(report, t)}</p>
                         {report.id === activeReport?.id && (
                           <span className="text-[10px] font-bold bg-[#245C3A] text-white px-1.5 py-0.2 rounded">
-                            Active
+                            {t("common.active", "Active")}
                           </span>
                         )}
                       </div>
                       <p className="text-[11px] text-[#5C6E63] truncate">
-                        Tested: {report.sampleDate} • Score: {report.healthScore}/100
+                        {t("common.date", "Tested")}: {formatLocalDate(report.sampleDate, language)} • {t("common.score", "Score")}: {report.healthScore}/100
                       </p>
                     </div>
                   </div>
@@ -593,14 +599,14 @@ export default function DashboardPage() {
                         onClick={() => setActiveReportId(report.id)}
                         className="px-3 py-1.5 rounded-xl bg-white border border-[#E2EBE2] hover:bg-[#E8F0E7] text-[#26332B] text-xs font-bold transition cursor-pointer"
                       >
-                        Select
+                        {t("common.select", "Select")}
                       </button>
                     )}
                     <Link
                       to="/soil-analysis"
                       onClick={() => setActiveReportId(report.id)}
                       className="p-2 rounded-xl bg-white border border-[#E2EBE2] hover:bg-[#E8F0E7] text-[#245C3A] transition"
-                      title="View Report Analysis"
+                      title={t("dashboard.viewDetailedReport", "View Detailed Soil Report")}
                     >
                       <ChevronRight className="w-4 h-4" />
                     </Link>
@@ -612,7 +618,7 @@ export default function DashboardPage() {
 
           <div className="pt-4 mt-4 border-t border-[#E2EBE2] text-center">
             <span className="text-xs text-[#5C6E63]">
-              All data encrypted and synchronized with your farmer ID.
+              {t("dashboard.dataEncryptedNotice", "All data encrypted and synchronized with your farmer ID.")}
             </span>
           </div>
         </div>

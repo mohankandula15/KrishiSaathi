@@ -1,14 +1,10 @@
 import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { 
   Sprout, 
-  FileText, 
-  Bot, 
-  BarChart3, 
   UploadCloud, 
   Menu, 
   X, 
-  User, 
   Globe, 
   LogOut,
   ChevronDown
@@ -16,12 +12,11 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useSoil } from '../context/SoilContext';
 import { useTranslation } from 'react-i18next';
-import { SUPPORTED_LANGUAGES } from '../data/sampleSoilReports';
+import { LANGUAGES } from '../i18n/languages';
 
 export default function Navbar() {
   const { t } = useTranslation();
   const location = useLocation();
-  const navigate = useNavigate();
   const { user, logout, language, setLanguage } = useAuth();
   const { setIsUploadModalOpen } = useSoil();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -55,7 +50,7 @@ export default function Navbar() {
                 </span>
               </div>
               <p className="text-xs text-stone-500 font-medium tracking-wide">
-                AI Soil Intelligence & Crop Advisory
+                {t('common.appTagline', 'AI Soil Intelligence & Crop Advisory')}
               </p>
             </div>
           </Link>
@@ -88,34 +83,50 @@ export default function Navbar() {
             <div className="relative">
               <button
                 onClick={() => setLangDropdownOpen(!langDropdownOpen)}
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-xl transition"
-                title="Select Language"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-xl transition cursor-pointer"
+                title={t('header.selectLanguage', 'Select Language')}
               >
                 <Globe className="w-4 h-4 text-emerald-700" />
-                <span>{SUPPORTED_LANGUAGES.find(l => l.code === language)?.name.split(' ')[0] || 'English'}</span>
+                <span>{LANGUAGES.find(l => l.code === language)?.name.split(' ')[0] || 'English'}</span>
                 <ChevronDown className="w-3.5 h-3.5 text-stone-500" />
               </button>
 
               {langDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-stone-200 py-1 z-50 animate-in fade-in slide-in-from-top-2">
+                <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-xl border border-stone-200 py-1 z-50 animate-in fade-in slide-in-from-top-2">
                   <div className="px-3 py-1.5 text-[11px] font-bold text-stone-500 uppercase tracking-wider border-b border-stone-100">
-                    Select Language
+                    {t('header.selectLanguage', 'Select Language')}
                   </div>
-                  {SUPPORTED_LANGUAGES.map((lang) => (
-                    <button
-                      key={lang.code}
-                      onClick={() => {
-                        setLanguage(lang.code);
-                        setLangDropdownOpen(false);
-                      }}
-                      className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-emerald-50 ${
-                        language === lang.code ? 'font-bold text-emerald-700 bg-emerald-50/70' : 'text-stone-700'
-                      }`}
-                    >
-                      {lang.name}
-                      {language === lang.code && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>}
-                    </button>
-                  ))}
+                  <div className="max-h-64 overflow-y-auto py-1">
+                    {LANGUAGES.map((lang) => (
+                      <button
+                        key={lang.code}
+                        disabled={!lang.supported}
+                        onClick={() => {
+                          if (lang.supported) {
+                            setLanguage(lang.code);
+                            setLangDropdownOpen(false);
+                          }
+                        }}
+                        className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition ${
+                          !lang.supported
+                            ? 'opacity-50 cursor-not-allowed text-stone-400'
+                            : language === lang.code 
+                              ? 'font-bold text-emerald-700 bg-emerald-50/70 cursor-pointer' 
+                              : 'text-stone-700 hover:bg-emerald-50 cursor-pointer'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="truncate">{lang.name}</span>
+                          {!lang.supported && (
+                            <span className="text-[9px] bg-stone-100 text-stone-500 font-bold px-1.5 py-0.2 rounded-full whitespace-nowrap">
+                              {t('common.comingSoon', 'Coming soon')}
+                            </span>
+                          )}
+                        </div>
+                        {language === lang.code && lang.supported && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0"></span>}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -123,7 +134,7 @@ export default function Navbar() {
             {/* Upload Soil Report Quick Button */}
             <button
               onClick={() => setIsUploadModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-stone-950 shadow-md shadow-amber-500/20 transition-all hover:scale-[1.02] active:scale-95"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-stone-950 shadow-md shadow-amber-500/20 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
             >
               <UploadCloud className="w-4 h-4 text-stone-950" />
               <span>{t('header.uploadReport', 'Upload Soil Report')}</span>
@@ -146,8 +157,9 @@ export default function Navbar() {
                 </Link>
                 <button
                   onClick={logout}
-                  title="Logout"
-                  className="p-2 text-stone-400 hover:text-red-600 rounded-lg hover:bg-stone-100 transition"
+                  title={t('nav.logout', 'Log Out')}
+                  aria-label={t('nav.logout', 'Log Out')}
+                  className="p-2 text-stone-400 hover:text-red-600 rounded-lg hover:bg-stone-100 transition cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
@@ -158,13 +170,13 @@ export default function Navbar() {
                   to="/login"
                   className="px-4 py-2 rounded-xl text-xs font-bold text-emerald-900 hover:bg-emerald-50 border border-emerald-300 transition"
                 >
-                  Login
+                  {t('nav.login', 'Log In')}
                 </Link>
                 <Link
                   to="/register"
                   className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm transition"
                 >
-                  Register
+                  {t('nav.register', 'Register')}
                 </Link>
               </div>
             )}
@@ -226,7 +238,7 @@ export default function Navbar() {
               className="w-full py-3 px-4 rounded-xl bg-amber-500 text-stone-950 font-bold text-center flex items-center justify-center gap-2 shadow-xs"
             >
               <UploadCloud className="w-5 h-5" />
-              <span>Upload Soil Report</span>
+              <span>{t('header.uploadReport', 'Upload Soil Report')}</span>
             </button>
 
             {user ? (
@@ -245,9 +257,9 @@ export default function Navbar() {
                     logout();
                     setMobileMenuOpen(false);
                   }}
-                  className="px-3 py-1.5 text-xs text-red-600 font-bold border border-red-200 rounded-lg hover:bg-red-50"
+                  className="px-3 py-1.5 text-xs text-red-600 font-bold border border-red-200 rounded-lg hover:bg-red-50 cursor-pointer"
                 >
-                  Logout
+                  {t('nav.logout', 'Log Out')}
                 </button>
               </div>
             ) : (
@@ -257,14 +269,14 @@ export default function Navbar() {
                   onClick={() => setMobileMenuOpen(false)}
                   className="py-2.5 text-center text-sm font-bold border border-emerald-600 text-emerald-800 rounded-xl"
                 >
-                  Login
+                  {t('nav.login', 'Log In')}
                 </Link>
                 <Link
                   to="/register"
                   onClick={() => setMobileMenuOpen(false)}
                   className="py-2.5 text-center text-sm font-bold bg-emerald-700 text-white rounded-xl"
                 >
-                  Register
+                  {t('nav.register', 'Register')}
                 </Link>
               </div>
             )}

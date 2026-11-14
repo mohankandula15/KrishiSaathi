@@ -12,14 +12,14 @@ import {
   Edit3,
   ShieldCheck,
   Check,
-  RotateCcw,
-  FileText
+  RotateCcw
 } from 'lucide-react';
 import { useSoil } from '../context/SoilContext';
 import { useTranslation } from 'react-i18next';
 import { SAMPLE_SOIL_REPORTS } from '../data/sampleSoilReports';
 import { api } from '../services/api';
 import { classifyLive, analyzeSoil } from '../engine/icarEngine';
+import { getDemoCardMeta } from '../i18n/dataLookups';
 import WhatsAppShareReport from './WhatsAppShareReport';
 
 export default function SoilUploadModal() {
@@ -91,10 +91,11 @@ export default function SoilUploadModal() {
   if (!isUploadModalOpen) return null;
 
   const extractionSteps = [
-    "Uploading document to secure storage...",
-    "Scanning Soil Health Card document with OCR engine...",
-    "Extracting NPK, pH, and organic carbon values...",
-    "Computing soil nutrient deficiency benchmarks..."
+    t('uploadModal.steps.step0', 'Detecting document layout & language...'),
+    t('uploadModal.steps.step1', 'Locating ICAR Soil Health Card standard tables...'),
+    t('uploadModal.steps.step2', 'Parsing N, P, K available macronutrient values...'),
+    t('uploadModal.steps.step3', 'Validating pH scale, organic carbon and micronutrients...'),
+    t('uploadModal.steps.step4', 'Benchmarking diagnostic ratios against state agronomy models...')
   ];
 
   const resetModal = () => {
@@ -521,7 +522,7 @@ export default function SoilUploadModal() {
 
               {/* Manual Entry Action Link */}
               <div className="flex items-center justify-between text-xs text-[#5C6E63] px-1 py-1">
-                <span>Working offline or don't have a document file?</span>
+                <span>{t('uploadModal.workingOffline', "Working offline or don't have a document file?")}</span>
                 <button
                   type="button"
                   onClick={handleEnterManually}
@@ -540,7 +541,7 @@ export default function SoilUploadModal() {
                   className="w-full py-3.5 px-4 rounded-xl bg-[#245C3A] hover:bg-[#1B462C] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-xs active:scale-98 transition cursor-pointer"
                 >
                   <Sparkles className="w-4 h-4 text-emerald-100" />
-                  <span>Extract Soil Parameters</span>
+                  <span>{t('uploadModal.extractParameters', 'Extract Soil Parameters')}</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               )}
@@ -553,41 +554,49 @@ export default function SoilUploadModal() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => handleStartExtraction(SAMPLE_SOIL_REPORTS[0])}
-                    className="text-left p-3 rounded-xl border border-[#E2EBE2] hover:border-[#245C3A] hover:bg-[#E8F0E7]/40 transition group cursor-pointer"
-                  >
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-bold text-xs text-[#26332B] group-hover:text-[#245C3A]">
-                        🌾 Punjab - Alluvial Soil Card
-                      </span>
-                      <span className="text-[10px] bg-[#E8F0E7] text-[#245C3A] font-bold px-1.5 py-0.5 rounded">
-                        Wheat/Paddy
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-[#5C6E63] line-clamp-1">
-                      Low Nitrogen (185), High Potash (295), Low Zinc (0.45)
-                    </p>
-                  </button>
+                  {(() => {
+                    const demo1 = getDemoCardMeta(SAMPLE_SOIL_REPORTS[0], t);
+                    const demo2 = getDemoCardMeta(SAMPLE_SOIL_REPORTS[1], t);
+                    return (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleStartExtraction(SAMPLE_SOIL_REPORTS[0])}
+                          className="text-left p-3 rounded-xl border border-[#E2EBE2] hover:border-[#245C3A] hover:bg-[#E8F0E7]/40 transition group cursor-pointer"
+                        >
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-bold text-xs text-[#26332B] group-hover:text-[#245C3A]">
+                              {demo1.title}
+                            </span>
+                            <span className="text-[10px] bg-[#E8F0E7] text-[#245C3A] font-bold px-1.5 py-0.5 rounded">
+                              {demo1.cropBadge}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-[#5C6E63] line-clamp-1">
+                            {demo1.description}
+                          </p>
+                        </button>
 
-                  <button
-                    type="button"
-                    onClick={() => handleStartExtraction(SAMPLE_SOIL_REPORTS[1])}
-                    className="text-left p-3 rounded-xl border border-[#E2EBE2] hover:border-[#245C3A] hover:bg-[#E8F0E7]/40 transition group cursor-pointer"
-                  >
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-bold text-xs text-[#26332B] group-hover:text-[#245C3A]">
-                        🌱 Maharashtra - Black Soil Card
-                      </span>
-                      <span className="text-[10px] bg-amber-50 text-amber-900 border border-amber-200 font-bold px-1.5 py-0.5 rounded">
-                        Cotton/Soybean
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-[#5C6E63] line-clamp-1">
-                      Alkaline (pH 8.1), Low P (14.2), High K (310)
-                    </p>
-                  </button>
+                        <button
+                          type="button"
+                          onClick={() => handleStartExtraction(SAMPLE_SOIL_REPORTS[1])}
+                          className="text-left p-3 rounded-xl border border-[#E2EBE2] hover:border-[#245C3A] hover:bg-[#E8F0E7]/40 transition group cursor-pointer"
+                        >
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-bold text-xs text-[#26332B] group-hover:text-[#245C3A]">
+                              {demo2.title}
+                            </span>
+                            <span className="text-[10px] bg-amber-50 text-amber-900 border border-amber-200 font-bold px-1.5 py-0.5 rounded">
+                              {demo2.cropBadge}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-[#5C6E63] line-clamp-1">
+                            {demo2.description}
+                          </p>
+                        </button>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             </>
@@ -603,7 +612,7 @@ export default function SoilUploadModal() {
 
               <div>
                 <h4 className="text-base font-bold text-[#26332B] mb-1">
-                  Parsing Soil Health Document...
+                  {t('uploadModal.parsingDoc', 'Parsing Soil Health Document...')}
                 </h4>
                 <p className="text-xs font-semibold text-[#245C3A] h-5">
                   {extractionSteps[processingStep]}
@@ -628,7 +637,7 @@ export default function SoilUploadModal() {
 
               <div className="space-y-2 max-w-md mx-auto">
                 <h4 className="text-base font-bold text-[#26332B]">
-                  Extraction Failed
+                  {t('uploadModal.extractionFailed', 'Extraction Failed')}
                 </h4>
                 <p className="text-sm text-[#5C6E63]">
                   {t('uploadModal.couldNotRead', 'Could not read this card. Check your connection or enter values manually')}
@@ -666,9 +675,14 @@ export default function SoilUploadModal() {
                 <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2.5">
                   <AlertCircle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
                   <div>
-                    <strong className="block font-black text-amber-950">Manual Verification Recommended</strong>
+                    <strong className="block font-black text-amber-950">
+                      {t('uploadModal.manualVerificationRecommended', 'Manual Verification Recommended')}
+                    </strong>
                     <span>
-                      Some parameters were missing or detected with moderate confidence ({Math.round(confidence * 100)}%). Please review the fields highlighted below and enter values from your card if available.
+                      {t('uploadModal.manualVerificationDesc', { 
+                        percent: Math.round(confidence * 100),
+                        defaultValue: `Some parameters were missing or detected with moderate confidence (${Math.round(confidence * 100)}%). Please review the fields highlighted below and enter values from your card if available.`
+                      })}
                     </span>
                   </div>
                 </div>
@@ -676,7 +690,10 @@ export default function SoilUploadModal() {
                 <div className="p-3.5 rounded-2xl bg-[#E8F0E7] border border-[#D4E3D3] text-xs text-[#245C3A] flex items-center gap-2.5">
                   <ShieldCheck className="w-5 h-5 text-[#245C3A] shrink-0" />
                   <span>
-                    <strong>High Confidence Extraction ({Math.round(confidence * 100)}%):</strong> All primary nutrients extracted and validated against ICAR benchmarks.
+                    {t('uploadModal.highConfidenceDesc', {
+                      percent: Math.round(confidence * 100),
+                      defaultValue: `High Confidence Extraction (${Math.round(confidence * 100)}%): All primary nutrients extracted and validated against ICAR benchmarks.`
+                    })}
                   </span>
                 </div>
               )}
@@ -684,7 +701,7 @@ export default function SoilUploadModal() {
               {/* Report Title */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-[#5C6E63] mb-1">
-                  Report / Field Title
+                  {t('uploadModal.reportTitleLabel', 'Report / Field Title')}
                 </label>
                 <input
                   type="text"
@@ -700,7 +717,9 @@ export default function SoilUploadModal() {
                   <span className="text-xs font-black uppercase tracking-wider text-[#5C6E63]">
                     {t('uploadModal.coreNutrients', 'Core Soil Parameters (NPK & pH)')}
                   </span>
-                  <span className="text-[11px] text-[#5C6E63]">Values editable</span>
+                  <span className="text-[11px] text-[#5C6E63]">
+                    {t('uploadModal.valuesEditable', 'Values editable')}
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -727,7 +746,7 @@ export default function SoilUploadModal() {
                       <span className="text-xs text-[#5C6E63] font-bold shrink-0">kg/ha</span>
                     </div>
                     {missingFlags.nitrogen && (
-                      <span className="text-[10px] text-amber-700 font-bold block mt-1">⚠ Missing in report</span>
+                      <span className="text-[10px] text-amber-700 font-bold block mt-1">⚠ {t('uploadModal.missingInReport', 'Missing in report')}</span>
                     )}
                   </div>
 
@@ -753,7 +772,7 @@ export default function SoilUploadModal() {
                       <span className="text-xs text-[#5C6E63] font-bold shrink-0">kg/ha</span>
                     </div>
                     {missingFlags.phosphorus && (
-                      <span className="text-[10px] text-amber-700 font-bold block mt-1">⚠ Missing in report</span>
+                      <span className="text-[10px] text-amber-700 font-bold block mt-1">⚠ {t('uploadModal.missingInReport', 'Missing in report')}</span>
                     )}
                   </div>
 
@@ -779,7 +798,7 @@ export default function SoilUploadModal() {
                       <span className="text-xs text-[#5C6E63] font-bold shrink-0">kg/ha</span>
                     </div>
                     {missingFlags.potassium && (
-                      <span className="text-[10px] text-amber-700 font-bold block mt-1">⚠ Missing in report</span>
+                      <span className="text-[10px] text-amber-700 font-bold block mt-1">⚠ {t('uploadModal.missingInReport', 'Missing in report')}</span>
                     )}
                   </div>
 
@@ -805,7 +824,7 @@ export default function SoilUploadModal() {
                       <span className="text-xs text-[#5C6E63] font-bold shrink-0">0-14</span>
                     </div>
                     {missingFlags.ph && (
-                      <span className="text-[10px] text-amber-700 font-bold block mt-1">⚠ Missing in report</span>
+                      <span className="text-[10px] text-amber-700 font-bold block mt-1">⚠ {t('uploadModal.missingInReport', 'Missing in report')}</span>
                     )}
                   </div>
 

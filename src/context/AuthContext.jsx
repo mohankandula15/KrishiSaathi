@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '../services/api';
 import i18n from '../i18n';
+import { sanitizeLanguage, isSupportedLanguage } from '../i18n/languages';
 
 const AuthContext = createContext();
 
@@ -32,8 +33,12 @@ export function AuthProvider({ children }) {
   });
 
   const [language, setLanguageState] = useState(() => {
-    const local = localStorage.getItem('krishisaathi_lang');
-    if (local && ['en', 'te', 'hi'].includes(local)) return local;
+    const local = typeof localStorage !== 'undefined' ? localStorage.getItem('krishisaathi_lang') : null;
+    if (local && isSupportedLanguage(local)) return local;
+    if (typeof localStorage !== 'undefined' && local && !isSupportedLanguage(local)) {
+      localStorage.setItem('krishisaathi_lang', 'en');
+      localStorage.setItem('krishisaathi_preferred_lang', 'en');
+    }
     return 'en';
   });
 
@@ -44,7 +49,7 @@ export function AuthProvider({ children }) {
   // setLanguage: the single source of truth for language changes
   const setLanguage = (newLang) => {
     if (!newLang) return;
-    const targetLang = ['en', 'te', 'hi'].includes(newLang) ? newLang : newLang;
+    const targetLang = sanitizeLanguage(newLang);
     setLanguageState(targetLang);
     localStorage.setItem('krishisaathi_lang', targetLang);
     localStorage.setItem('krishisaathi_preferred_lang', targetLang);
@@ -74,12 +79,13 @@ export function AuthProvider({ children }) {
   // Keep i18n & HTML lang in sync with state
   useEffect(() => {
     if (language) {
-      localStorage.setItem('krishisaathi_lang', language);
-      localStorage.setItem('krishisaathi_preferred_lang', language);
+      const sanitized = sanitizeLanguage(language);
+      localStorage.setItem('krishisaathi_lang', sanitized);
+      localStorage.setItem('krishisaathi_preferred_lang', sanitized);
       if (typeof document !== 'undefined') {
-        document.documentElement.lang = language;
+        document.documentElement.lang = sanitized;
       }
-      i18n.changeLanguage(language).catch(() => {});
+      i18n.changeLanguage(sanitized).catch(() => {});
     }
   }, [language]);
 

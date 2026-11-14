@@ -409,14 +409,5 @@ export const INDIAN_STATES = [
   "Uttar Pradesh", "Uttarakhand", "West Bengal", "Jammu and Kashmir"
 ];
 
-export const SUPPORTED_LANGUAGES = [
-  { code: "en", name: "English" },
-  { code: "hi", name: "हिन्दी (Hindi)" },
-  { code: "pa", name: "ਪੰਜਾਬੀ (Punjabi)" },
-  { code: "mr", name: "मराठी (Marathi)" },
-  { code: "te", name: "తెలుగు (Telugu)" },
-  { code: "ta", name: "தமிழ் (Tamil)" },
-  { code: "gu", name: "ગુજરાતી (Gujarati)" },
-  { code: "bn", name: "বাংলা (Bengali)" },
-  { code: "kn", name: "ಕನ್ನಡ (Kannada)" }
-];
+export { SUPPORTED_LANGUAGES, LANGUAGES } from '../i18n/languages';
+

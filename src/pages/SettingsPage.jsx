@@ -2,18 +2,14 @@ import React, { useState } from 'react';
 import { 
   Settings, 
   User, 
-  Globe, 
-  ShieldCheck, 
   Bell, 
   Check, 
   Save, 
-  MapPin, 
-  Lock,
-  AlertCircle
+  Lock
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { SUPPORTED_LANGUAGES } from '../data/sampleSoilReports';
+import { LANGUAGES } from '../i18n/languages';
 
 export default function SettingsPage() {
   const { t } = useTranslation();
@@ -69,7 +65,7 @@ export default function SettingsPage() {
       setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
       setTimeout(() => setPasswordSuccess(false), 3000);
     } else {
-      alert("Passwords do not match or cannot be empty.");
+      alert(t('settings.passwordMismatch', 'Passwords do not match or cannot be empty.'));
     }
   };
 
@@ -118,7 +114,7 @@ export default function SettingsPage() {
               
               <div>
                 <label className="block text-[#5C6E63] font-bold uppercase tracking-wider mb-1.5">
-                  Full Farmer Name
+                  {t('register.fullName', 'Full Farmer Name')}
                 </label>
                 <input
                   type="text"
@@ -131,20 +127,20 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-[#5C6E63] font-bold uppercase tracking-wider mb-1.5">
-                  Mobile Number (Login Identifier)
+                  {t('login.mobileLabel', 'Mobile Number')}
                 </label>
                 <input
                   type="text"
                   value={formData.mobile_number}
                   readOnly
                   className="w-full py-2.5 px-3.5 bg-[#F8FAF7] rounded-xl border border-[#E2EBE2] text-sm text-[#5C6E63] font-mono cursor-not-allowed"
-                  title="Mobile number is tied to your farmer account"
+                  title={t('settings.mobileLocked', 'Mobile number is tied to your farmer account')}
                 />
               </div>
 
               <div>
                 <label className="block text-[#5C6E63] font-bold uppercase tracking-wider mb-1.5">
-                  Village
+                  {t('register.village', 'Village')}
                 </label>
                 <input
                   type="text"
@@ -157,7 +153,7 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-[#5C6E63] font-bold uppercase tracking-wider mb-1.5">
-                  District
+                  {t('register.district', 'District')}
                 </label>
                 <input
                   type="text"
@@ -170,7 +166,7 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-[#5C6E63] font-bold uppercase tracking-wider mb-1.5">
-                  State
+                  {t('register.state', 'State')}
                 </label>
                 <input
                   type="text"
@@ -183,13 +179,13 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-[#5C6E63] font-bold uppercase tracking-wider mb-1.5">
-                  Total Farm Size
+                  {t('dashboard.farmSize', 'Total Farm Size')}
                 </label>
                 <input
                   type="text"
                   value={formData.landSize}
                   onChange={(e) => setFormData({ ...formData, landSize: e.target.value })}
-                  placeholder="e.g. 3.5 Acres"
+                  placeholder={t('settings.landSizePlaceholder', 'e.g. 3.5 Acres')}
                   className="w-full py-2.5 px-3.5 bg-[#F8FAF7] rounded-xl border border-[#E2EBE2] text-sm text-[#26332B] font-medium focus:ring-2 focus:ring-[#245C3A] focus:outline-hidden"
                 />
               </div>
@@ -203,8 +199,10 @@ export default function SettingsPage() {
                   onChange={(e) => setFormData({ ...formData, preferred_language: e.target.value })}
                   className="w-full py-2.5 px-3.5 bg-[#F8FAF7] rounded-xl border border-[#E2EBE2] text-sm text-[#26332B] font-bold focus:ring-2 focus:ring-[#245C3A] focus:outline-hidden cursor-pointer"
                 >
-                  {SUPPORTED_LANGUAGES.map((l) => (
-                    <option key={l.code} value={l.code}>{l.name}</option>
+                  {LANGUAGES.map((l) => (
+                    <option key={l.code} value={l.code} disabled={!l.supported}>
+                      {l.nativeName} ({l.name}){l.supported ? '' : ` — ${t('common.comingSoon', 'Coming soon')}`}
+                    </option>
                   ))}
                 </select>
                 <p className="text-[11px] text-[#5C6E63] mt-1">
@@ -232,7 +230,7 @@ export default function SettingsPage() {
           <div className="pb-4 border-b border-[#E2EBE2] flex items-center gap-2">
             <Bell className="w-5 h-5 text-[#245C3A]" />
             <h2 className="text-base font-black text-[#26332B]">
-              Agricultural Advisory & Alert Channels
+              {t('settings.advisoryChannels', 'Agricultural Advisory & Alert Channels')}
             </h2>
           </div>
 
@@ -240,8 +238,8 @@ export default function SettingsPage() {
             
             <div className="p-4 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2] flex items-center justify-between">
               <div>
-                <p className="font-bold text-[#26332B]">Weather & Extreme Rain Alerts</p>
-                <p className="text-[#5C6E63] text-[11px]">Instant SMS warnings about hailstorms, heavy precipitation, and frost</p>
+                <p className="font-bold text-[#26332B]">{t('settings.weatherAlerts', 'Weather & Extreme Rain Alerts')}</p>
+                <p className="text-[#5C6E63] text-[11px]">{t('settings.weatherAlertsDesc', 'Instant SMS warnings about hailstorms, heavy precipitation, and frost')}</p>
               </div>
               <input
                 type="checkbox"
@@ -253,8 +251,8 @@ export default function SettingsPage() {
 
             <div className="p-4 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2] flex items-center justify-between">
               <div>
-                <p className="font-bold text-[#26332B]">Fertilizer Top Dressing Reminders</p>
-                <p className="text-[#5C6E63] text-[11px]">Milestone alerts at 21 days (CRI stage) and 45 days (tillering stage)</p>
+                <p className="font-bold text-[#26332B]">{t('settings.fertilizerReminders', 'Fertilizer Top Dressing Reminders')}</p>
+                <p className="text-[#5C6E63] text-[11px]">{t('settings.fertilizerRemindersDesc', 'Milestone alerts at 21 days (CRI stage) and 45 days (tillering stage)')}</p>
               </div>
               <input
                 type="checkbox"
@@ -266,8 +264,8 @@ export default function SettingsPage() {
 
             <div className="p-4 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2] flex items-center justify-between">
               <div>
-                <p className="font-bold text-[#26332B]">Pest & Disease Outbreak Bulletins</p>
-                <p className="text-[#5C6E63] text-[11px]">Regional ICAR advisories for yellow rust, aphids, and stem borers</p>
+                <p className="font-bold text-[#26332B]">{t('settings.pestWarnings', 'Pest & Disease Outbreak Bulletins')}</p>
+                <p className="text-[#5C6E63] text-[11px]">{t('settings.pestWarningsDesc', 'Regional ICAR advisories for yellow rust, aphids, and stem borers')}</p>
               </div>
               <input
                 type="checkbox"
@@ -286,13 +284,13 @@ export default function SettingsPage() {
             <div className="flex items-center gap-2">
               <Lock className="w-5 h-5 text-[#245C3A]" />
               <h2 className="text-base font-black text-[#26332B]">
-                Account Security & Password
+                {t('settings.accountSecurity', 'Account Security & Password')}
               </h2>
             </div>
             {passwordSuccess && (
               <span className="text-xs font-bold text-[#245C3A] bg-[#E8F0E7] px-3 py-1 rounded-full flex items-center gap-1.5 animate-in fade-in">
                 <Check className="w-3.5 h-3.5" />
-                Password Updated
+                {t('settings.passwordUpdated', 'Password Updated')}
               </span>
             )}
           </div>
@@ -301,26 +299,26 @@ export default function SettingsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
                 <label className="block text-[#5C6E63] font-bold uppercase tracking-wider mb-1.5">
-                  New Password
+                  {t('settings.newPassword', 'New Password')}
                 </label>
                 <input
                   type="password"
                   value={passwords.newPassword}
                   onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
-                  placeholder="Minimum 6 characters"
+                  placeholder={t('settings.min6Chars', 'Minimum 6 characters')}
                   className="w-full py-2.5 px-3.5 bg-[#F8FAF7] rounded-xl border border-[#E2EBE2] text-sm text-[#26332B] focus:ring-2 focus:ring-[#245C3A] focus:outline-hidden"
                 />
               </div>
 
               <div>
                 <label className="block text-[#5C6E63] font-bold uppercase tracking-wider mb-1.5">
-                  Confirm New Password
+                  {t('settings.confirmPassword', 'Confirm New Password')}
                 </label>
                 <input
                   type="password"
                   value={passwords.confirmPassword}
                   onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
-                  placeholder="Re-enter password"
+                  placeholder={t('settings.reenterPassword', 'Re-enter password')}
                   className="w-full py-2.5 px-3.5 bg-[#F8FAF7] rounded-xl border border-[#E2EBE2] text-sm text-[#26332B] focus:ring-2 focus:ring-[#245C3A] focus:outline-hidden"
                 />
               </div>
@@ -332,7 +330,7 @@ export default function SettingsPage() {
                 disabled={!passwords.newPassword}
                 className="px-5 py-2.5 rounded-xl bg-[#245C3A] hover:bg-[#1B462C] disabled:opacity-40 text-white font-bold text-xs transition cursor-pointer"
               >
-                Update Password
+                {t('settings.updatePassword', 'Update Password')}
               </button>
             </div>
           </form>

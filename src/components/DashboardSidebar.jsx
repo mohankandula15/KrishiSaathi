@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSoil } from '../context/SoilContext';
+import { getCardDisplayName } from '../i18n/dataLookups';
 
 export default function DashboardSidebar({ mobileOpen, setMobileOpen }) {
   const { t } = useTranslation();
@@ -71,8 +72,8 @@ export default function DashboardSidebar({ mobileOpen, setMobileOpen }) {
         {mobileOpen && (
           <button 
             onClick={() => setMobileOpen(false)}
-            className="md:hidden p-2 rounded-xl text-[#5C6E63] hover:bg-[#F2F7F1] transition"
-            aria-label="Close Sidebar"
+            className="md:hidden p-2 rounded-xl text-[#5C6E63] hover:bg-[#F2F7F1] transition cursor-pointer"
+            aria-label={t("common.close", "Close")}
           >
             <X className="w-5 h-5" />
           </button>
@@ -123,14 +124,14 @@ export default function DashboardSidebar({ mobileOpen, setMobileOpen }) {
           <div className="p-3.5 rounded-2xl bg-[#F8FAF7] border border-[#E2EBE2] hover:border-[#245C3A]/40 transition">
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-xs font-black text-[#26332B] truncate max-w-[130px]">
-                {activeReport?.id || "SHC-Active"}
+                {getCardDisplayName(activeReport, t)}
               </span>
-              <span className="text-[10px] font-bold bg-[#E8F0E7] text-[#245C3A] px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-bold bg-[#E8F0E7] text-[#245C3A] px-2 py-0.5 rounded-full shrink-0">
                 {activeReport?.healthScore || 74}/100 {t("common.score", "Score")}
               </span>
             </div>
             <p className="text-[11px] text-[#5C6E63] truncate mb-2.5">
-              {activeReport?.title || "Field Report"}
+              {activeReport?.title ? getCardDisplayName(activeReport, t) : t("common.fieldReport", "Field Report")}
             </p>
             <NavLink
               to="/soil-analysis"
@@ -181,7 +182,7 @@ export default function DashboardSidebar({ mobileOpen, setMobileOpen }) {
             onClick={handleLogout}
             title={t("nav.logout", "Log out")}
             className="p-2 rounded-xl text-[#5C6E63] hover:text-red-700 hover:bg-red-50 transition cursor-pointer"
-            aria-label="Log Out"
+            aria-label={t("nav.logout", "Log out")}
           >
             <LogOut className="w-4 h-4" />
           </button>

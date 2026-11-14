@@ -365,6 +365,31 @@ test('i18n Translation Integrity & Units Preservation', async (t) => {
     assert.deepEqual(hiKeys, enKeys);
   });
 
+  await t.test('Automated Key Parity: te.json and hi.json must have every nested key present in en.json', () => {
+    function getLeafKeys(obj, prefix = '') {
+      let keys = [];
+      for (const [k, v] of Object.entries(obj)) {
+        const full = prefix ? `${prefix}.${k}` : k;
+        if (v && typeof v === 'object' && !Array.isArray(v)) {
+          keys = keys.concat(getLeafKeys(v, full));
+        } else {
+          keys.push(full);
+        }
+      }
+      return keys;
+    }
+
+    const enKeys = getLeafKeys(en).sort();
+    const teKeys = getLeafKeys(te).sort();
+    const hiKeys = getLeafKeys(hi).sort();
+
+    const missingInTe = enKeys.filter(k => !teKeys.includes(k));
+    const missingInHi = enKeys.filter(k => !hiKeys.includes(k));
+
+    assert.equal(missingInTe.length, 0, `Telugu locale is missing keys: ${missingInTe.join(', ')}`);
+    assert.equal(missingInHi.length, 0, `Hindi locale is missing keys: ${missingInHi.join(', ')}`);
+  });
+
   await t.test('Units are preserved identically across all languages', () => {
     assert.equal(en.common.units.kgPerHa, 'kg/ha');
     assert.equal(te.common.units.kgPerHa, 'kg/ha');
